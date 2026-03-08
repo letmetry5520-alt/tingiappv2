@@ -15,15 +15,15 @@ export default async function DashboardPage() {
     where: { createdAt: { gte: startOfDay(sevenDaysAgo) } }
   });
 
-  const paidOrdersWeek = recentOrders.filter(o => o.status === "Paid");
-
   const recentTransactions = await prisma.financialTransaction.findMany({
     where: { date: { gte: startOfDay(sevenDaysAgo) } }
   });
 
-  const totalSalesWeek = paidOrdersWeek.reduce((sum, o) => sum + o.total, 0);
-  const totalProfitWeek = paidOrdersWeek.reduce((sum, o) => sum + o.profit, 0);
-  const totalExpensesWeek = recentTransactions
+  // Calculate statistics from ALL recent orders (Paid + Utang)
+  const totalSalesWeek = recentOrders.reduce((sum, o) => sum + o.total, 0);
+  const totalProfitWeek = recentOrders.reduce((sum, o) => sum + o.profit, 0);
+  
+  const totalExpensesWeek = (recentTransactions as any[])
     .filter(t => t.type === "Expense")
     .reduce((sum, t) => sum + t.amount, 0);
   const netProfitWeek = totalProfitWeek - totalExpensesWeek;
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
   for (let i = 6; i >= 0; i--) {
     const day = subDays(today, i);
     const dayStr = format(day, "MMM dd");
-    const dayOrders = paidOrdersWeek.filter(o => 
+    const dayOrders = recentOrders.filter(o => 
       o.createdAt >= startOfDay(day) && o.createdAt <= endOfDay(day)
     );
     chartData.push({
