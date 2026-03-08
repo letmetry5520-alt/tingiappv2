@@ -10,7 +10,7 @@ import { PaymentDialog } from "../receivables/PaymentDialog";
 import { DeliveryStatusSelect } from "./DeliveryStatusSelect";
 import { OrderDetailsDialog } from "./OrderDetailsDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Info, MapPin, User as UserIcon, Phone } from "lucide-react";
+import { Info, MapPin, User as UserIcon, Phone, Navigation } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +62,10 @@ export default async function OrdersPage() {
             ) : (
               orders.map((order) => {
                 const isPaid = order.status === "Paid";
+                const mapsUrl = order.customer.latitude != null && order.customer.longitude != null
+                  ? `https://www.google.com/maps/dir/?api=1&destination=${order.customer.latitude},${order.customer.longitude}`
+                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.customer.address)}`;
+                  
                 return (
                   <TableRow key={order.id} className="hover:bg-black/[0.02] transition-colors">
                     <TableCell className="font-medium whitespace-nowrap">
@@ -92,12 +96,24 @@ export default async function OrdersPage() {
                             </div>
                             
                             <div className="space-y-3 pt-3 border-t border-black/[0.03]">
-                              <div className="flex items-start gap-3">
-                                <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                                <div>
-                                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Verified Address</div>
-                                  <div className="text-sm font-medium leading-tight text-slate-700">{order.customer.address}</div>
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-3 pr-2">
+                                  <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                                  <div>
+                                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Verified Address</div>
+                                    <div className="text-sm font-medium leading-tight text-slate-700">{order.customer.address}</div>
+                                  </div>
                                 </div>
+                                <Button 
+                                  size="icon" 
+                                  variant="secondary" 
+                                  className="h-9 w-9 rounded-full shadow-md bg-blue-500 hover:bg-blue-600 text-white border-0 shrink-0 transition-transform hover:scale-105"
+                                  asChild
+                                >
+                                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" title="Get Directions">
+                                    <Navigation className="h-4 w-4" />
+                                  </a>
+                                </Button>
                               </div>
                               
                               <div className="flex items-center gap-3">
