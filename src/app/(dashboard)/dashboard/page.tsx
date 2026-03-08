@@ -115,7 +115,7 @@ export default async function DashboardPage() {
               <div className="flex items-baseline justify-between">
                 <div className="text-3xl font-black tracking-tighter text-slate-900">₱{stat.value.toFixed(2)}</div>
                 <div className={`text-xs font-bold flex items-center ${stat.color === "rose" ? "text-rose-600" : stat.color === "orange" ? "text-orange-600" : "text-emerald-600"}`}>
-                   {stat.color ===stat.isWarning? <ArrowDownRight className="w-3 h-3 h-3 mr-0.5" /> : <ArrowUpRight className="w-3 h-3 mr-0.5" />} {stat.trend}
+                   {stat.trend.startsWith("+") ? <ArrowUpRight className="w-3 h-3 mr-0.5" /> : <ArrowDownRight className="w-3 h-3 mr-0.5" />} {stat.trend}
                 </div>
               </div>
               <p className="text-xs font-medium text-muted-foreground mt-2">{stat.desc}</p>

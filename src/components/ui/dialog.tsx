@@ -11,16 +11,42 @@ function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 
-function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+function DialogTrigger({
+  asChild,
+  children,
+  ...props
+}: DialogPrimitive.Trigger.Props & { asChild?: boolean }) {
+  return (
+    <DialogPrimitive.Trigger
+      data-slot="dialog-trigger"
+      {...props}
+      nativeButton={asChild ? false : (props.nativeButton ?? true)}
+      render={asChild ? (children as React.ReactElement) : undefined}
+    >
+      {!asChild ? children : null}
+    </DialogPrimitive.Trigger>
+  )
 }
 
 function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
 }
 
-function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+function DialogClose({
+  asChild,
+  children,
+  ...props
+}: DialogPrimitive.Close.Props & { asChild?: boolean }) {
+  return (
+    <DialogPrimitive.Close
+      data-slot="dialog-close"
+      {...props}
+      nativeButton={asChild ? false : (props.nativeButton ?? true)}
+      render={asChild ? (children as React.ReactElement) : undefined}
+    >
+      {!asChild ? children : null}
+    </DialogPrimitive.Close>
+  )
 }
 
 function DialogOverlay({
@@ -62,6 +88,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
+            nativeButton={false}
             render={
               <Button
                 variant="ghost"
@@ -109,7 +136,7 @@ function DialogFooter({
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close render={<Button variant="outline" />}>
+        <DialogPrimitive.Close nativeButton={false} render={<Button variant="outline" />}>
           Close
         </DialogPrimitive.Close>
       )}
