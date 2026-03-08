@@ -21,7 +21,15 @@ type OrderToPay = {
   payments: Array<{ amount: number }>;
 }
 
-export function PaymentDialog({ order }: { order: OrderToPay }) {
+export function PaymentDialog({ 
+  order, 
+  triggerText = "Collect Payment", 
+  variant = "default" 
+}: { 
+  order: OrderToPay, 
+  triggerText?: string, 
+  variant?: "default" | "outline" | "ghost" | "secondary" 
+}) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,14 +51,14 @@ export function PaymentDialog({ order }: { order: OrderToPay }) {
       setOpen(false);
       setAmount("");
     } else {
-      alert(res.error);
+      alert("error" in res ? res.error : "Failed to process payment");
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">Collect Payment</Button>
+        <Button size="sm" variant={variant}>{triggerText}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>

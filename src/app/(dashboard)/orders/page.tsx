@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { PaymentDialog } from "../receivables/PaymentDialog";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,7 @@ export default async function OrdersPage() {
               <TableHead>Total Value</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="text-right">Manage</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -75,6 +77,28 @@ export default async function OrdersPage() {
                       <Badge className={`rounded-full px-3 ${isPaid ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-orange-500 hover:bg-orange-600 text-white"}`}>
                         {order.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!isPaid && (
+                        <div className="flex justify-end gap-2">
+                          {order.paymentType === "Cash" && order.status === "Pending" ? (
+                             <PaymentDialog 
+                               order={{ id: order.id, total: order.total, payments: order.payments }} 
+                               triggerText="Mark as Paid"
+                               variant="default"
+                             />
+                          ) : (
+                            <PaymentDialog 
+                              order={{ id: order.id, total: order.total, payments: order.payments }} 
+                              triggerText="Collect"
+                              variant="outline"
+                            />
+                          )}
+                        </div>
+                      )}
+                      {isPaid && (
+                        <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 font-bold uppercase text-[9px]">Completed</Badge>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
