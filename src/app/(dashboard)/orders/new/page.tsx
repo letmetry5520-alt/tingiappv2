@@ -3,7 +3,8 @@ import { OrderForm } from "./OrderForm";
 
 const prisma = new PrismaClient();
 
-export default async function NewOrderPage({ searchParams }: { searchParams: { customer?: string } }) {
+export default async function NewOrderPage({ searchParams }: { searchParams: Promise<{ customer?: string }> }) {
+  const { customer: defaultCustomerId } = await searchParams;
   const customers = await prisma.customer.findMany({
     orderBy: { storeName: "asc" },
     select: { id: true, storeName: true, ownerName: true, address: true }
@@ -25,7 +26,7 @@ export default async function NewOrderPage({ searchParams }: { searchParams: { c
       customers={customers} 
       products={products} 
       packages={packages} 
-      defaultCustomerId={searchParams?.customer} 
+      defaultCustomerId={defaultCustomerId} 
     />
   );
 }
