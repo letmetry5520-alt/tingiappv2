@@ -67,7 +67,22 @@ export async function createOrder(
           }
           
           cost += pkgCost * item.quantity;
-          finalItemsList.push({ type: "package", id: pkg.id, name: pkg.name, price: pkg.price, quantity: item.quantity });
+          
+          // Get product names for the manifest breakdown
+          const pkgManifestItems = [];
+          for (const pItem of pkgItems) {
+            const p = await tx.product.findUnique({ where: { id: pItem.productId }, select: { name: true } });
+            pkgManifestItems.push({ name: p?.name || "Unknown Product", quantity: pItem.quantity });
+          }
+
+          finalItemsList.push({ 
+            type: "package", 
+            id: pkg.id, 
+            name: pkg.name, 
+            price: pkg.price, 
+            quantity: item.quantity,
+            packageItems: pkgManifestItems // Snapshot of what's inside for the manifest
+          });
         }
       }
       

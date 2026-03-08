@@ -81,21 +81,45 @@ export function OrderDetailsDialog({ order }: OrderDetailsProps) {
             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">
               <Package className="h-3.5 w-3.5" /> Manifest
             </div>
-            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
               {items.map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-white rounded-xl border border-black/[0.02] shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 border border-black/[0.03]">
-                      {item.quantity}x
+                <div key={i} className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-black/[0.02] shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-[10px] font-black border border-black/[0.03] ${item.type === "package" ? "bg-indigo-50 text-indigo-500 shadow-inner" : "bg-slate-100 text-slate-400"}`}>
+                        {item.quantity}x
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-bold text-slate-900">{item.name}</div>
+                          {item.type === "package" && (
+                            <Badge className="bg-indigo-500 hover:bg-indigo-600 text-[8px] h-4 px-1.5 font-black uppercase tracking-tighter">Package</Badge>
+                          )}
+                        </div>
+                        <div className="text-[10px] font-medium text-muted-foreground">₱{item.price.toFixed(2)} per unit</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm font-bold text-slate-900">{item.name}</div>
-                      <div className="text-[10px] font-medium text-muted-foreground">₱{item.price.toFixed(2)} per unit</div>
+                    <div className="text-sm font-black text-slate-900">
+                      ₱{(item.price * item.quantity).toFixed(2)}
                     </div>
                   </div>
-                  <div className="text-sm font-black text-slate-900">
-                    ₱{(item.price * item.quantity).toFixed(2)}
-                  </div>
+                  
+                  {/* Package Bundle Breakdown */}
+                  {item.type === "package" && (item as any).packageItems && (
+                    <div className="ml-6 pl-4 border-l-2 border-indigo-100 py-1 space-y-1.5">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-1.5 mb-2">
+                        <div className="w-1 h-1 rounded-full bg-indigo-300" /> Bundle Contents
+                      </div>
+                      {(item as any).packageItems.map((pItem: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center text-[11px] bg-slate-50/50 p-2 rounded-lg border border-black/[0.01]">
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-indigo-600 bg-indigo-50 px-1 rounded">{pItem.quantity * item.quantity}x</span>
+                            <span className="font-semibold text-slate-600">{pItem.name}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
