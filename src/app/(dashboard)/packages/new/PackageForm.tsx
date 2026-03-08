@@ -103,7 +103,7 @@ export function PackageForm({ products }: { products: ProductType[] }) {
               <div className="flex items-end gap-2">
                 <div className="flex-1 space-y-2">
                   <Label>Add Products to Package</Label>
-                  <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                  <Select value={selectedProduct} onValueChange={(val) => { if (val) setSelectedProduct(val); }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select product..." />
                     </SelectTrigger>

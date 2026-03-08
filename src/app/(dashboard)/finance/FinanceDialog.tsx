@@ -110,7 +110,7 @@ export function FinanceDialog() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Category</Label>
-                  <Select value={category} onValueChange={setCategory}>
+                  <Select value={category} onValueChange={(val) => { if (val) setCategory(val); }}>
                     <SelectTrigger className="h-12 rounded-xl border-black/[0.05] bg-white text-sm font-bold shadow-sm">
                       <SelectValue placeholder="Purpose" />
                     </SelectTrigger>

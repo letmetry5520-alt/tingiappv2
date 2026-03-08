@@ -115,7 +115,7 @@ export function EditProductForm({ product }: { product: Product }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Unit Type *</Label>
-                <Select value={unit} onValueChange={setUnit}>
+                <Select value={unit} onValueChange={(val) => { if (val) setUnit(val); }}>
                   <SelectTrigger className="h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm">
                     <SelectValue />
                   </SelectTrigger>

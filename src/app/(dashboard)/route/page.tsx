@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, ShoppingCart, Receipt, Navigation, Calendar } from "lucide-react";
 import Link from "next/link";
+import { RouteMap } from "./RouteMap";
 
 const prisma = new PrismaClient();
 
@@ -22,6 +23,8 @@ export default async function RoutePage() {
     }
   });
 
+  const todayStr = format(today, "yyyy-MM-dd");
+
   const customersWithBal = await Promise.all(customers.map(async (c) => {
     const unpaid = await prisma.order.findMany({
       where: { customerId: c.id, paymentType: "Utang", status: { not: "Paid" } },
@@ -31,7 +34,19 @@ export default async function RoutePage() {
        const paid = o.payments.reduce((pSum, p) => pSum + p.amount, 0);
        return sum + (o.total - paid);
     }, 0);
-    return { ...c, balance };
+    
+    // Check logistics status of the most relevant order
+    const latestOrder = c.orders[0];
+    let logisticsStatus: string | null = null;
+    
+    if (latestOrder) {
+      // If it was created today, or if it is still ongoing, we consider its logistics status
+      if (format(new Date(latestOrder.createdAt), "yyyy-MM-dd") === todayStr || latestOrder.deliveryStatus !== "Delivered") {
+         logisticsStatus = latestOrder.deliveryStatus;
+      }
+    }
+
+    return { ...c, balance, logisticsStatus };
   }));
 
   return (
@@ -68,7 +83,9 @@ export default async function RoutePage() {
           </Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <>
+          <RouteMap customers={customersWithBal} />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {customersWithBal.map((c) => (
             <Card key={c.id} className="group flex flex-col border-0 shadow-xl bg-white/60 backdrop-blur-2xl ring-1 ring-black/5 hover:ring-2 hover:ring-primary/20 transition-all duration-500 rounded-[2rem] overflow-hidden">
               <CardHeader className="pb-4 bg-slate-50/30 border-b border-black/[0.02] px-6">
@@ -127,7 +144,8 @@ export default async function RoutePage() {
               </CardFooter>
             </Card>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
