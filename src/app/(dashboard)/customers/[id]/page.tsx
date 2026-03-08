@@ -133,14 +133,14 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </div>
 
         <div className="md:col-span-2 space-y-6">
-          {customer.gallery && customer.gallery.length > 0 && (
+          {customer.gallery && customer.gallery.filter(Boolean).length > 0 && (
              <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-2xl ring-1 ring-black/5 rounded-3xl overflow-hidden">
                <CardHeader className="pb-3 border-b border-black/[0.03]">
                  <CardTitle className="text-lg font-bold">Store Gallery</CardTitle>
                </CardHeader>
                <CardContent className="pt-4 px-4 overflow-x-auto">
                  <div className="flex gap-3 pb-2">
-                   {customer.gallery.map((img, i) => (
+                   {customer.gallery.filter(Boolean).map((img, i) => (
                      <div key={i} className="h-32 w-32 shrink-0 relative overflow-hidden rounded-2xl group cursor-pointer border ring-1 ring-black/5 transition-all hover:ring-2 hover:ring-primary/20">
                        <img src={img} alt={`${customer.storeName} gallery ${i}`} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
                      </div>
