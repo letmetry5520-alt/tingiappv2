@@ -115,3 +115,21 @@ export async function createOrder(
     return { success: false, error: error.message || "Failed to create order" };
   }
 }
+
+export async function updateDeliveryStatus(orderId: string, deliveryStatus: string) {
+  try {
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { deliveryStatus }
+    });
+
+    revalidatePath("/orders");
+    revalidatePath("/route");
+    revalidatePath(`/customers/${order.customerId}`);
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Delivery status update failed:", error);
+    return { success: false, error: error.message || "Failed to update delivery status" };
+  }
+}

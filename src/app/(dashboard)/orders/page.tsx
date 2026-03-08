@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PaymentDialog } from "../receivables/PaymentDialog";
+import { DeliveryStatusSelect } from "./DeliveryStatusSelect";
 
 export const dynamic = "force-dynamic";
 
@@ -43,14 +44,15 @@ export default async function OrdersPage() {
               <TableHead>Customer</TableHead>
               <TableHead>Total Value</TableHead>
               <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Payment</TableHead>
+              <TableHead>Logistic</TableHead>
               <TableHead className="text-right">Manage</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {orders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                   No orders found. Create a new one.
                 </TableCell>
               </TableRow>
@@ -74,9 +76,12 @@ export default async function OrdersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={`rounded-full px-3 ${isPaid ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-orange-500 hover:bg-orange-600 text-white"}`}>
+                      <Badge className={`rounded-full px-3 text-[10px] font-bold uppercase tracking-tight ${isPaid ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-orange-500 hover:bg-orange-600 text-white"}`}>
                         {order.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DeliveryStatusSelect orderId={order.id} initialStatus={order.deliveryStatus || "Pending"} />
                     </TableCell>
                     <TableCell className="text-right">
                       {!isPaid && (
