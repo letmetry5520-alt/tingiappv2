@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("Viewer") // Admin, Delivery, Editor, Viewer
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  storeName          String
+  ownerName          String
+  phone              String
+  address            String
+  latitude           Float?
+  longitude          Float?
+  notes              String?
+  zoneName           String?
+  routeDay           String?
+  expectedOrderCycle String? // Daily, Weekly, Biweekly, Irregular
+  
+  orders             Order[]
+  payments           Payment[]
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  category    String
+  unit        String   // bottle, sachet, tray, pack
+  cost        Float
+  price       Float
+  stock       Int      @default(0)
+  minStock    Int      @default(10)
+  
+  InventoryLogs InventoryLog[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Package {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  items       Json     // Array of { productId, quantity }
+  price       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Order {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  customer    Customer @relation(fields: [customerId], references: [id])
+  customerId  String   @db.ObjectId
+  items       Json     // Array of { type: "product"|"package", id, quantity, price }
+  total       Float
+  cost        Float
+  profit      Float
+  paymentType String   // Cash, Utang
+  dueDate     DateTime?
+  status      String   @default("Pending") // Pending, Partially Paid, Paid
+  
+  payments    Payment[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Payment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  order       Order    @relation(fields: [orderId], references: [id])
+  orderId     String   @db.ObjectId
+  customer    Customer @relation(fields: [customerId], references: [id])
+  customerId  String   @db.ObjectId
+  amount      Float
+  date        DateTime @default(now())
+  method      String   // Cash, Transfer
+  
+  createdAt   DateTime @default(now())
+}
+
+model Expense {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  category    String
+  description String
+  amount      Float
+  date        DateTime @default(now())
+  
+  createdAt   DateTime @default(now())
+}
+
+model InventoryLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  product     Product  @relation(fields: [productId], references: [id])
+  productId   String   @db.ObjectId
+  change      Int      // Positive for restock, negative for sale
+  type        String   // Restock, Sale, Adjustment
+  date        DateTime @default(now())
+  
+  createdAt   DateTime @default(now())
+}
