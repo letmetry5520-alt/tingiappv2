@@ -110,7 +110,7 @@ export default async function OrdersPage() {
                                   className="h-9 w-9 rounded-full shadow-md bg-blue-500 hover:bg-blue-600 text-white border-0 shrink-0 transition-transform hover:scale-105"
                                   asChild
                                 >
-                                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" title="Get Directions">
+                                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" title="Open in Google Maps">
                                     <Navigation className="h-4 w-4" />
                                   </a>
                                 </Button>
