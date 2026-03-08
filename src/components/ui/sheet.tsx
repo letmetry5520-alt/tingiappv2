@@ -20,7 +20,6 @@ function SheetTrigger({
     <SheetPrimitive.Trigger
       data-slot="sheet-trigger"
       {...props}
-      nativeButton={asChild ? false : undefined}
       render={asChild ? (children as React.ReactElement) : undefined}
     >
       {!asChild ? children : null}
@@ -37,7 +36,6 @@ function SheetClose({
     <SheetPrimitive.Close
       data-slot="sheet-close"
       {...props}
-      nativeButton={asChild ? false : undefined}
       render={asChild ? (children as React.ReactElement) : undefined}
     >
       {!asChild ? children : null}

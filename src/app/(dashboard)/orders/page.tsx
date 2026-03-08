@@ -70,7 +70,7 @@ export default async function OrdersPage() {
                     </TableCell>
                     <TableCell>
                       <Popover>
-                        <PopoverTrigger asChild>
+                        <PopoverTrigger asChild nativeButton={false}>
                           <div className="cursor-help transition-all hover:translate-x-1 inline-flex flex-col group/pop">
                             <div className="font-semibold text-slate-900 flex items-center gap-1.5 min-w-max">
                               {order.customer.storeName}
