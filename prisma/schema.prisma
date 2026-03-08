@@ -95,8 +95,9 @@ model Payment {
   createdAt   DateTime @default(now())
 }
 
-model Expense {
+model FinancialTransaction {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  type        String   @default("Expense") // Income, Expense
   category    String
   description String
   amount      Float

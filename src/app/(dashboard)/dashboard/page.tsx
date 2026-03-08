@@ -17,13 +17,15 @@ export default async function DashboardPage() {
 
   const paidOrdersWeek = recentOrders.filter(o => o.status === "Paid");
 
-  const recentExpenses = await prisma.expense.findMany({
+  const recentTransactions = await prisma.financialTransaction.findMany({
     where: { date: { gte: startOfDay(sevenDaysAgo) } }
   });
 
   const totalSalesWeek = paidOrdersWeek.reduce((sum, o) => sum + o.total, 0);
   const totalProfitWeek = paidOrdersWeek.reduce((sum, o) => sum + o.profit, 0);
-  const totalExpensesWeek = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalExpensesWeek = recentTransactions
+    .filter(t => t.type === "Expense")
+    .reduce((sum, t) => sum + t.amount, 0);
   const netProfitWeek = totalProfitWeek - totalExpensesWeek;
 
   const unpaidOrders = await prisma.order.findMany({
