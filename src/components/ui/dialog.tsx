@@ -20,6 +20,7 @@ function DialogTrigger({
     <DialogPrimitive.Trigger
       data-slot="dialog-trigger"
       {...props}
+      nativeButton={asChild ? false : undefined}
       render={asChild ? (children as React.ReactElement) : undefined}
     >
       {!asChild ? children : null}
@@ -40,6 +41,7 @@ function DialogClose({
     <DialogPrimitive.Close
       data-slot="dialog-close"
       {...props}
+      nativeButton={asChild ? false : undefined}
       render={asChild ? (children as React.ReactElement) : undefined}
     >
       {!asChild ? children : null}
