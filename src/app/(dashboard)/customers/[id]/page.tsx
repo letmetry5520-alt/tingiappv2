@@ -55,6 +55,11 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
+        {customer.image && (
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-white shadow-lg ring-1 ring-black/5">
+            <img src={customer.image} alt={customer.storeName} className="h-full w-full object-cover" />
+          </div>
+        )}
         <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">{customer.storeName}</h1>
           <p className="text-muted-foreground">Added on {format(customer.createdAt, 'MMM d, yyyy')}</p>
@@ -128,6 +133,23 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </div>
 
         <div className="md:col-span-2 space-y-6">
+          {customer.gallery && customer.gallery.length > 0 && (
+             <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-2xl ring-1 ring-black/5 rounded-3xl overflow-hidden">
+               <CardHeader className="pb-3 border-b border-black/[0.03]">
+                 <CardTitle className="text-lg font-bold">Store Gallery</CardTitle>
+               </CardHeader>
+               <CardContent className="pt-4 px-4 overflow-x-auto">
+                 <div className="flex gap-3 pb-2">
+                   {customer.gallery.map((img, i) => (
+                     <div key={i} className="h-32 w-32 shrink-0 relative overflow-hidden rounded-2xl group cursor-pointer border ring-1 ring-black/5 transition-all hover:ring-2 hover:ring-primary/20">
+                       <img src={img} alt={`${customer.storeName} gallery ${i}`} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                     </div>
+                   ))}
+                 </div>
+               </CardContent>
+             </Card>
+          )}
+          
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-lg">Recent Orders</CardTitle>

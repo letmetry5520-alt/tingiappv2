@@ -52,12 +52,21 @@ export function CustomerTable({ data }: { data: Customer[] }) {
               </TableCell>
             </TableRow>
           ) : (
-            filteredData.map((c) => (
+            filteredData.map((c: any) => (
               <TableRow key={c.id} className="group hover:bg-black/[0.01] transition-all duration-300 border-b border-black/[0.02] last:border-0 h-20">
                 <TableCell className="px-8">
-                   <div className="flex flex-col">
-                     <span className="font-bold text-slate-900 group-hover:text-primary transition-colors">{c.storeName}</span>
-                     <span className="text-xs font-semibold text-muted-foreground/80">{c.ownerName}</span>
+                   <div className="flex items-center gap-4">
+                     <div className="h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-slate-100 border border-black/[0.05] ring-1 ring-black/5 flex items-center justify-center transition-all group-hover:shadow-lg group-hover:shadow-primary/10">
+                       {c.image ? (
+                         <img src={c.image} alt={c.storeName} className="h-full w-full object-cover" />
+                       ) : (
+                         <div className="text-muted-foreground/30 font-black text-xs">{c.storeName.charAt(0)}</div>
+                       )}
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="font-bold text-slate-900 group-hover:text-primary transition-colors text-base tracking-tight">{c.storeName}</span>
+                       <span className="text-xs font-semibold text-muted-foreground/80">{c.ownerName}</span>
+                     </div>
                    </div>
                 </TableCell>
                 <TableCell>

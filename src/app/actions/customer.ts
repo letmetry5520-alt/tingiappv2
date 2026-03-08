@@ -22,6 +22,8 @@ export async function createCustomer(formData: FormData) {
         notes: (formData.get("notes") as string) || null,
         latitude: lat ? parseFloat(lat) : null,
         longitude: lng ? parseFloat(lng) : null,
+        image: (formData.get("image") as string) || null,
+        gallery: formData.getAll("gallery") as string[],
       }
     });
 
