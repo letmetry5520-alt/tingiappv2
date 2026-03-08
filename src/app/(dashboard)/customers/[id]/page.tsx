@@ -73,7 +73,9 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
               </a>
             </Button>
           )}
-          <Button>Edit Profile</Button>
+          <Button asChild>
+            <Link href={`/customers/${customer.id}/edit`}>Edit Profile</Link>
+          </Button>
         </div>
       </div>
 
