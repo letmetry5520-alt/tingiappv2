@@ -8,6 +8,9 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PaymentDialog } from "../receivables/PaymentDialog";
 import { DeliveryStatusSelect } from "./DeliveryStatusSelect";
+import { OrderDetailsDialog } from "./OrderDetailsDialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Info, MapPin, User as UserIcon, Phone } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -66,8 +69,52 @@ export default async function OrdersPage() {
                       <div className="text-xs text-muted-foreground">{format(new Date(order.createdAt), "hh:mm a")}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-semibold text-slate-900">{order.customer.storeName}</div>
-                      <div className="text-xs text-muted-foreground">{order.customer.ownerName}</div>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <div className="cursor-help transition-all hover:translate-x-1 inline-flex flex-col group/pop">
+                            <div className="font-semibold text-slate-900 flex items-center gap-1.5 min-w-max">
+                              {order.customer.storeName}
+                              <Info className="h-3 w-3 opacity-0 group-hover/pop:opacity-40 transition-opacity" />
+                            </div>
+                            <div className="text-xs text-muted-foreground">{order.customer.ownerName}</div>
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="w-80 p-0 overflow-hidden border-0 shadow-2xl rounded-2xl bg-white/90 backdrop-blur-2xl ring-1 ring-black/5">
+                          <div className="p-5 space-y-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                                <UserIcon className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Store Owner</div>
+                                <div className="font-bold text-slate-900">{order.customer.ownerName}</div>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-3 pt-3 border-t border-black/[0.03]">
+                              <div className="flex items-start gap-3">
+                                <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                                <div>
+                                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Verified Address</div>
+                                  <div className="text-sm font-medium leading-tight text-slate-700">{order.customer.address}</div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3">
+                                <Phone className="h-4 w-4 text-emerald-500 shrink-0" />
+                                <div>
+                                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Primary Contact</div>
+                                  <div className="text-sm font-bold text-slate-900">{order.customer.phone}</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <Button variant="secondary" size="sm" className="w-full rounded-xl mt-2 h-10 font-bold" asChild>
+                              <Link href={`/customers/${order.customer.id}`}>View Full Profile</Link>
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </TableCell>
                     <TableCell className="font-bold">₱{order.total.toFixed(2)}</TableCell>
                     <TableCell>
@@ -83,27 +130,31 @@ export default async function OrdersPage() {
                     <TableCell>
                       <DeliveryStatusSelect orderId={order.id} initialStatus={order.deliveryStatus || "Pending"} />
                     </TableCell>
-                    <TableCell className="text-right">
-                      {!isPaid && (
-                        <div className="flex justify-end gap-2">
-                          {order.paymentType === "Cash" && order.status === "Pending" ? (
-                             <PaymentDialog 
-                               order={{ id: order.id, total: order.total, payments: order.payments }} 
-                               triggerText="Mark as Paid"
-                               variant="default"
-                             />
-                          ) : (
-                            <PaymentDialog 
-                              order={{ id: order.id, total: order.total, payments: order.payments }} 
-                              triggerText="Collect"
-                              variant="outline"
-                            />
-                          )}
-                        </div>
-                      )}
-                      {isPaid && (
-                        <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 font-bold uppercase text-[9px]">Completed</Badge>
-                      )}
+                     <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <OrderDetailsDialog order={order} />
+                        
+                        {!isPaid && (
+                          <>
+                            {order.paymentType === "Cash" && order.status === "Pending" ? (
+                               <PaymentDialog 
+                                 order={{ id: order.id, total: order.total, payments: order.payments }} 
+                                 triggerText="Mark as Paid"
+                                 variant="default"
+                               />
+                            ) : (
+                              <PaymentDialog 
+                                order={{ id: order.id, total: order.total, payments: order.payments }} 
+                                triggerText="Collect"
+                                variant="outline"
+                              />
+                            )}
+                          </>
+                        )}
+                        {isPaid && (
+                          <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 font-bold uppercase text-[9px]">Completed</Badge>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
