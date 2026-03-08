@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tingiapp 🚀
+### Sari-Sari Store Distribution Management System
 
-## Getting Started
+Tingiapp is a modern, premium, and mobile-optimized web application designed for small-scale distribution businesses. It streamlines the management of sari-sari store partners, inventory tracking, sales recording, and credit (utang) management.
 
-First, run the development server:
+---
+
+## 🌟 Key Features
+
+- **📱 Mobile-First Dashboard**: Premium glassmorphic UI designed for delivery personnel on the go.
+- **📊 Real-time Analytics**: Visualize sales, profit, and expense trends with interactive charts.
+- **🤝 Customer Ecosystem**: Complete CRM for managing store partners, contact details, and route settings.
+- **📦 Inventory & Package Builder**: Track individual stock levels and create product bundles (packages) for faster checkout.
+- **💳 Credit (Utang) Management**: Specialized ledger for tracking customer balances, partially paid orders, and payment history.
+- **🛣️ Route Optimization**: View and navigate to customer locations directly via integrated maps.
+- **💸 Finance Ledger**: Record business expenses and track categorized spending.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js 15/16](https://nextjs.org/) (App Router)
+- **Frontend**: React 19, [TailwindCSS 4](https://tailwindcss.com/), [Base UI](https://base-ui.com/)
+- **Database**: [Prisma](https://www.prisma.io/) with [MongoDB](https://www.mongodb.com/)
+- **Authentication**: [NextAuth.js](https://next-auth.js.org/)
+- **Charts**: [Recharts](https://recharts.org/)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
+- **Icons**: [Lucide React](https://lucide.dev/)
+
+---
+
+## 📂 Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+├── prisma/               # Database schema and migration files
+├── public/               # Static assets
+├── src/
+│   ├── app/              # Next.js App Router (Pages, Layouts, APIs)
+│   │   ├── (dashboard)/  # Authenticated dashboard routes
+│   │   ├── actions/      # Next.js Server Actions (DB Logic)
+│   │   ├── api/          # API Endpoints (Auth, etc.)
+│   │   └── login/        # Authentication pages
+│   ├── components/       # Reusable UI components
+│   │   ├── layout/       # Navigation, Topbar, Sidebar
+│   │   └── ui/           # Base UI primitives and styled components
+│   ├── lib/              # Shared utilities (Auth config, Prisma client)
+│   └── store/            # Zustand state stores
+└── .env                  # Environment variables (Sensitive)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Getting Started
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Prerequisites
+- Node.js 18+
+- A MongoDB Connection String
 
-## Learn More
+### 2. Installation
+```bash
+# Clone the repository
+git clone https://github.com/rebiorti-max/tingiapp.git
+cd tingiapp
 
-To learn more about Next.js, take a look at the following resources:
+# Install dependencies
+npm install
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. Environment Setup
+Create a `.env` file in the root directory:
+```env
+DATABASE_URL="mongodb+srv://..."
+NEXTAUTH_SECRET="your-secret"
+NEXTAUTH_URL="http://localhost:3000"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Database Initialization
+```bash
+# Generate Prisma Client
+npx prisma generate
 
-## Deploy on Vercel
+# (Optional) Seed the database
+node prisma/seed.js
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 5. Run the App
+```bash
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🧠 AI Integration Guide
+
+For future AI agents working on this project:
+
+- **Component Pattern**: This project uses **Base UI** for primitive logic and custom Tailwind styling. Avoid nesting `<button>` tags inside triggers; use the `render` prop or style triggers directly.
+- **Data Hydration**: Route parameters (`params`) and search parameters (`searchParams`) are **Asynchronous** (Next.js 15+). Always `await` them before use.
+- **Database**: Prisma with MongoDB. Ensure `@db.ObjectId` is used for all ID fields.
+- **Aesthetics**: Maintain the "Premium Glassmorphism" look—high contrast, rounded corners (`rounded-3xl`+), and subtle backdrops.
+
+---
+
+## 📄 License
+This project is private and intended for internal use.
