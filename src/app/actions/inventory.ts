@@ -33,6 +33,35 @@ export async function createProduct(formData: FormData) {
   }
 }
 
+export async function updateProduct(id: string, formData: FormData) {
+  try {
+    const cost = parseFloat(formData.get("cost") as string);
+    const price = parseFloat(formData.get("price") as string);
+    const stock = parseInt(formData.get("stock") as string, 10);
+    const minStock = parseInt(formData.get("minStock") as string, 10);
+
+    await prisma.product.update({
+      where: { id },
+      data: {
+        name: formData.get("name") as string,
+        category: formData.get("category") as string,
+        unit: formData.get("unit") as string,
+        cost,
+        price,
+        stock,
+        minStock,
+      }
+    });
+
+    revalidatePath("/inventory");
+    revalidatePath(`/products/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update product:", error);
+    return { success: false, error: "Failed to update product" };
+  }
+}
+
 export async function createPackage(name: string, price: number, items: Array<{ productId: string, quantity: number }>) {
   try {
     await prisma.package.create({
