@@ -88,8 +88,7 @@ export async function createOrder(
       
       const profit = total - cost;
       
-      // Compute due date if Utang (7 days from now)
-      const dueDate = paymentType === "Utang" ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null;
+      // Due date remains null until the order is delivered
       const status = paymentType === "Cash" ? "Paid" : "Pending";
 
       const order = await tx.order.create({
@@ -100,7 +99,7 @@ export async function createOrder(
           total,
           cost,
           profit,
-          dueDate,
+          dueDate: null,
           status,
         }
       });
@@ -133,13 +132,28 @@ export async function createOrder(
 
 export async function updateDeliveryStatus(orderId: string, deliveryStatus: string) {
   try {
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { paymentType: true, deliveryStatus: true }
+    });
+
+    let dueDateUpdate = {};
+    if (deliveryStatus === "Delivered" && existingOrder?.paymentType === "Utang") {
+      // Countdown starts only when delivered
+      dueDateUpdate = { dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) };
+    }
+
     const order = await prisma.order.update({
       where: { id: orderId },
-      data: { deliveryStatus }
+      data: { 
+        deliveryStatus,
+        ...dueDateUpdate
+      }
     });
 
     revalidatePath("/orders");
     revalidatePath("/route");
+    revalidatePath("/receivables");
     revalidatePath(`/customers/${order.customerId}`);
 
     return { success: true };

@@ -1,11 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Clock } from "lucide-react";
 import { PaymentDialog } from "../receivables/PaymentDialog";
 import { DeliveryStatusSelect } from "./DeliveryStatusSelect";
 import { OrderDetailsDialog } from "./OrderDetailsDialog";
@@ -128,7 +128,21 @@ export default async function OrdersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <DeliveryStatusSelect orderId={order.id} initialStatus={order.deliveryStatus || "Pending"} />
+                      <div className="flex flex-col gap-2">
+                        <DeliveryStatusSelect orderId={order.id} initialStatus={order.deliveryStatus || "Pending"} />
+                        {order.paymentType === "Utang" && order.deliveryStatus === "Delivered" && !isPaid && order.dueDate && (
+                           <Badge variant="outline" className={`rounded-xl px-2 py-0.5 text-[9px] font-black border-0 shadow-sm flex items-center gap-1.5 w-fit ${
+                             differenceInDays(new Date(order.dueDate), new Date()) < 0 
+                             ? "bg-rose-500 text-white animate-pulse" 
+                             : "bg-amber-100 text-amber-700"
+                           }`}>
+                             <Clock className="w-2.5 h-2.5" />
+                             {differenceInDays(new Date(order.dueDate), new Date()) < 0 
+                               ? "OVERDUE" 
+                               : `DUE IN ${differenceInDays(new Date(order.dueDate), new Date())} DAYS`}
+                           </Badge>
+                        )}
+                      </div>
                     </TableCell>
                      <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
