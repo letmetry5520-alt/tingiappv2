@@ -79,6 +79,18 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
     }
   });
 
+  const recentPayments = await prisma.payment.findMany({
+    where: { 
+      date: { 
+        gte: startDate,
+        lte: endDate
+      } 
+    },
+    include: {
+      order: true
+    }
+  });
+
   const recentTransactions = await prisma.financialTransaction.findMany({
     where: { 
       date: { 
@@ -89,8 +101,15 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
   });
 
   // Calculate statistics
-  const totalSales = recentOrders.reduce((sum, o) => sum + o.total, 0);
-  const totalProfit = recentOrders.reduce((sum, o) => sum + o.profit, 0);
+  // Gross Sales reflect total money collected (Revenue)
+  const totalSales = recentPayments.reduce((sum, p) => sum + p.amount, 0);
+  
+  // Realized Profit: Proportional profit based on how much was collected for each order
+  const totalProfit = recentPayments.reduce((sum, p) => {
+    if (!p.order || p.order.total === 0) return sum;
+    const profitRatio = p.order.profit / p.order.total;
+    return sum + (p.amount * profitRatio);
+  }, 0);
   
   const totalExpenses = (recentTransactions as any[])
     .filter(t => t.type === "Expense")
@@ -132,14 +151,18 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
       const dayStart = startOfDay(day);
       const dayEnd = endOfDay(day);
       
-      const contextOrders = await prisma.order.findMany({
-        where: { createdAt: { gte: dayStart, lte: dayEnd } }
+      const contextPayments = await prisma.payment.findMany({
+        where: { date: { gte: dayStart, lte: dayEnd } },
+        include: { order: true }
       });
 
       chartData.push({
         date: dayStr,
-        sales: contextOrders.reduce((sum, o) => sum + o.total, 0),
-        profit: contextOrders.reduce((sum, o) => sum + o.profit, 0)
+        sales: contextPayments.reduce((sum, p) => sum + p.amount, 0),
+        profit: contextPayments.reduce((sum, p) => {
+          if (!p.order || p.order.total === 0) return sum;
+          return sum + (p.amount * (p.order.profit / p.order.total));
+        }, 0)
       });
     }
   } else {
@@ -149,14 +172,17 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
       const dayStart = startOfDay(day);
       const dayEnd = endOfDay(day);
 
-      const dayOrders = recentOrders.filter(o => 
-        o.createdAt >= dayStart && o.createdAt <= dayEnd
+      const dayPayments = recentPayments.filter(p => 
+        p.date >= dayStart && p.date <= dayEnd
       );
 
       chartData.push({
         date: dayStr,
-        sales: dayOrders.reduce((sum, o) => sum + o.total, 0),
-        profit: dayOrders.reduce((sum, o) => sum + o.profit, 0)
+        sales: dayPayments.reduce((sum, p) => sum + p.amount, 0),
+        profit: dayPayments.reduce((sum, p) => {
+          if (!p.order || p.order.total === 0) return sum;
+          return sum + (p.amount * (p.order.profit / p.order.total));
+        }, 0)
       });
     }
   }
@@ -209,10 +235,10 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[
           { 
-            title: "Gross Sales", 
+            title: "Total Collections", 
             value: totalSales, 
             icon: DollarSign, 
-            desc: `${filter.charAt(0).toUpperCase() + filter.slice(1)} Period`, 
+            desc: "Money collected today", 
             color: "blue",
             trend: "+12.5%" 
           },
@@ -275,10 +301,10 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
             </div>
             <div className="flex gap-3">
               <div className="flex items-center gap-2 text-[10px] font-black px-4 py-1.5 bg-primary/10 rounded-xl text-primary border border-primary/20 backdrop-blur-md">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> SALES
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> COLLECTIONS
               </div>
               <div className="flex items-center gap-2 text-[10px] font-black px-4 py-1.5 bg-emerald-500/10 rounded-xl text-emerald-500 border border-emerald-500/20 backdrop-blur-md">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> PROFIT
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> REALIZED PROFIT
               </div>
             </div>
           </CardHeader>
