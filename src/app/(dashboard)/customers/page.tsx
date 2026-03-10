@@ -10,24 +10,38 @@ const prisma = new PrismaClient();
 
 export default async function CustomersPage() {
   const customers = await prisma.customer.findMany({
-    orderBy: { storeName: "asc" }
+    orderBy: { storeName: "asc" },
+    include: {
+      orders: {
+        where: {
+          OR: [
+            { status: "Pending" },
+            { status: "Partially Paid" }
+          ]
+        },
+        select: {
+          id: true,
+          total: true
+        }
+      }
+    }
   });
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-8 bg-white/40 border border-white/60 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl ring-1 ring-black/5 gap-6">
-        <div className="flex items-center gap-5">
-           <div className="p-4 bg-primary/10 rounded-3xl text-primary shadow-inner">
-             <Users className="h-8 w-8" />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 md:p-8 bg-white/40 border border-white/60 backdrop-blur-3xl rounded-[2rem] md:rounded-[2.5rem] shadow-2xl ring-1 ring-black/5 gap-6">
+        <div className="flex items-center gap-4 md:gap-5">
+           <div className="p-3 md:p-4 bg-primary/10 rounded-2xl md:rounded-3xl text-primary shadow-inner">
+             <Users className="h-6 w-6 md:h-8 md:w-8" />
            </div>
            <div>
-             <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">Customers</h1>
-             <p className="text-muted-foreground font-semibold mt-1">Manage your sari-sari store clients & routes.</p>
+             <h1 className="text-2xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent leading-none">Customers</h1>
+             <p className="text-[10px] md:text-sm text-muted-foreground font-semibold mt-1">Manage store clients & routes.</p>
            </div>
         </div>
-        <div className="flex w-full md:w-auto gap-3">
-          <Button asChild size="lg" className="rounded-2xl h-14 px-8 shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 font-bold group">
-            <Link href="/customers/new" className="flex items-center">
+        <div className="flex w-full md:w-auto">
+          <Button asChild size="lg" className="w-full md:w-auto rounded-xl md:rounded-2xl h-12 md:h-14 px-8 shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 font-bold group">
+            <Link href="/customers/new" className="flex items-center justify-center">
               <Plus className="mr-2 h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
               Add Partner Store
             </Link>
