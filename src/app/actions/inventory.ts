@@ -11,16 +11,30 @@ export async function createProduct(formData: FormData) {
     const price = parseFloat(formData.get("price") as string);
     const stock = parseInt(formData.get("stock") as string, 10);
     const minStock = parseInt(formData.get("minStock") as string, 10);
+    const notes = formData.get("notes") as string;
 
-    await prisma.product.create({
-      data: {
-        name: formData.get("name") as string,
-        category: formData.get("category") as string,
-        unit: formData.get("unit") as string,
-        cost,
-        price,
-        stock,
-        minStock,
+    await prisma.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: {
+          name: formData.get("name") as string,
+          category: formData.get("category") as string,
+          unit: formData.get("unit") as string,
+          cost,
+          price,
+          stock,
+          minStock,
+        }
+      });
+
+      if (stock > 0) {
+        await tx.inventoryLog.create({
+          data: {
+            productId: product.id,
+            change: stock,
+            type: "Initial Stock",
+            notes: notes || "Initial product creation"
+          }
+        });
       }
     });
 
@@ -39,17 +53,34 @@ export async function updateProduct(id: string, formData: FormData) {
     const price = parseFloat(formData.get("price") as string);
     const stock = parseInt(formData.get("stock") as string, 10);
     const minStock = parseInt(formData.get("minStock") as string, 10);
+    const notes = formData.get("notes") as string;
 
-    await prisma.product.update({
-      where: { id },
-      data: {
-        name: formData.get("name") as string,
-        category: formData.get("category") as string,
-        unit: formData.get("unit") as string,
-        cost,
-        price,
-        stock,
-        minStock,
+    await prisma.$transaction(async (tx) => {
+      const oldProduct = await tx.product.findUnique({ where: { id } });
+      if (!oldProduct) throw new Error("Product not found");
+
+      await tx.product.update({
+        where: { id },
+        data: {
+          name: formData.get("name") as string,
+          category: formData.get("category") as string,
+          unit: formData.get("unit") as string,
+          cost,
+          price,
+          stock,
+          minStock,
+        }
+      });
+
+      if (stock !== oldProduct.stock) {
+        await tx.inventoryLog.create({
+          data: {
+            productId: id,
+            change: stock - oldProduct.stock,
+            type: "Adjustment",
+            notes: notes || "Manual stock adjustment"
+          }
+        });
       }
     });
 
@@ -81,7 +112,7 @@ export async function createPackage(name: string, price: number, items: Array<{ 
   }
 }
 
-export async function restockProduct(productId: string, amount: number) {
+export async function restockProduct(productId: string, amount: number, notes?: string) {
   try {
     await prisma.$transaction(async (tx) => {
       await tx.product.update({
@@ -93,7 +124,8 @@ export async function restockProduct(productId: string, amount: number) {
         data: {
           productId,
           change: amount,
-          type: "Restock"
+          type: "Restock",
+          notes: notes || null
         }
       });
     });
@@ -101,6 +133,7 @@ export async function restockProduct(productId: string, amount: number) {
     revalidatePath("/inventory");
     return { success: true };
   } catch (error) {
+    console.error("Restock failed:", error);
     return { success: false, error: "Failed to restock" };
   }
 }

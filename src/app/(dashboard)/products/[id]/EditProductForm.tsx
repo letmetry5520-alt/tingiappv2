@@ -180,6 +180,15 @@ export function EditProductForm({ product }: { product: Product }) {
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Adjustment Notes / Source</Label>
+              <textarea
+                name="notes"
+                placeholder="Describe the reason for adjustment or source of stock..."
+                className="w-full min-h-[100px] p-4 rounded-xl border border-black/[0.05] bg-white font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none shadow-sm"
+              />
+            </div>
           </CardContent>
 
           <CardFooter className="px-8 py-6 bg-slate-50/30 border-t border-black/[0.03] flex justify-end gap-3">

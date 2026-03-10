@@ -91,12 +91,22 @@ export default function NewProductPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cost">Cost Price (₱) *</Label>
-                <Input id="cost" name="cost" type="number" step="0.01" required placeholder="0.00" />
+                <Input id="cost" name="cost" type="number" step="0.01" required placeholder="0.00" className="h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="price">Selling Price (₱) *</Label>
-                <Input id="price" name="price" type="number" step="0.01" required placeholder="0.00" />
+                <Input id="price" name="price" type="number" step="0.01" required placeholder="0.00" className="h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm" />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes / Source (Optional)</Label>
+              <textarea
+                id="notes"
+                name="notes"
+                placeholder="e.g. Initial stock from container of oil..."
+                className="w-full min-h-[100px] p-4 rounded-xl border border-black/[0.05] bg-white font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none shadow-sm"
+              />
             </div>
 
           </CardContent>

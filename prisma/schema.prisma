@@ -113,6 +113,7 @@ model InventoryLog {
   productId   String   @db.ObjectId
   change      Int      // Positive for restock, negative for sale
   type        String   // Restock, Sale, Adjustment
+  notes       String?  // Notes about the stock change
   date        DateTime @default(now())
   
   createdAt   DateTime @default(now())
