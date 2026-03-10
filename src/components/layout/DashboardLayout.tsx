@@ -35,8 +35,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden h-screen">
         <Topbar />
-        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 bg-background">
-          {children}
+        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 bg-background flex flex-col">
+          <div className="flex-1">
+            {children}
+          </div>
+          <footer className="mt-auto pt-12 pb-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/20">
+              Developed by <span className="text-primary/30">Creesler</span>
+            </p>
+          </footer>
         </main>
       </div>
     </div>
