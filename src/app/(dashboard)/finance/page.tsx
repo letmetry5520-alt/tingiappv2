@@ -4,29 +4,86 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FinanceDialog } from "./FinanceDialog";
 import { Badge } from "@/components/ui/badge";
-import { PieChart, TrendingDown, TrendingUp, Wallet, History, ArrowRight, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { TrendingDown, TrendingUp, Wallet, History as HistoryIcon, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FinanceFilter } from "./FinanceFilter";
+import { 
+  startOfDay, 
+  endOfDay, 
+  startOfMonth, 
+  endOfMonth, 
+  startOfYear, 
+  endOfYear,
+  subDays
+} from "date-fns";
 
 const prisma = new PrismaClient();
 
-export default async function FinancePage() {
+interface Transaction {
+  id: string;
+  type: string;
+  category: string;
+  description: string;
+  amount: number;
+  date: Date;
+}
+
+interface FinancePageProps {
+  searchParams: Promise<{ filter?: string }>;
+}
+
+export default async function FinancePage({ searchParams }: FinancePageProps) {
+  const params = await searchParams;
+  const filter = params.filter || "today";
+
+  const today = new Date();
+  let startDate: Date;
+  let endDate: Date = endOfDay(today);
+
+  switch (filter) {
+    case "weekly":
+      startDate = startOfDay(subDays(today, 6)); // Last 7 days
+      break;
+    case "monthly":
+      startDate = startOfDay(startOfMonth(today));
+      endDate = endOfDay(endOfMonth(today));
+      break;
+    case "yearly":
+      startDate = startOfDay(startOfYear(today));
+      endDate = endOfDay(endOfYear(today));
+      break;
+    case "all":
+      startDate = new Date(0); // Beginning of time
+      break;
+    case "today":
+    default:
+      startDate = startOfDay(today);
+      endDate = endOfDay(today);
+      break;
+  }
+
   const transactions = await prisma.financialTransaction.findMany({
+    where: {
+      date: {
+        gte: startDate,
+        lte: endDate
+      }
+    },
     orderBy: { date: "desc" },
-    take: 50
   });
 
-  const totalExpenses = transactions
+  const totalExpenses = (transactions as Transaction[])
     .filter(t => t.type === "Expense")
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum: number, t) => sum + t.amount, 0);
 
-  const totalIncome = transactions
+  const totalIncome = (transactions as Transaction[])
     .filter(t => t.type === "Income")
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum: number, t) => sum + t.amount, 0);
 
   const netFlow = totalIncome - totalExpenses;
 
   const categories: Record<string, number> = {};
-  transactions.forEach(t => {
+  (transactions as Transaction[]).forEach(t => {
     categories[t.category] = (categories[t.category] || 0) + (t.type === "Income" ? t.amount : -t.amount);
   });
 
@@ -46,6 +103,8 @@ export default async function FinancePage() {
           <FinanceDialog />
         </div>
       </div>
+
+      <FinanceFilter />
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-2xl ring-1 ring-black/5 rounded-[2rem] overflow-hidden group">
@@ -76,7 +135,7 @@ export default async function FinancePage() {
         )}>
           <CardHeader className="flex flex-row items-center justify-between pb-3">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Net Position</CardTitle>
-             <History className="h-4 w-4 opacity-40" />
+             <HistoryIcon className="h-4 w-4 opacity-40" />
           </CardHeader>
           <CardContent>
              <div className={cn(
@@ -93,7 +152,7 @@ export default async function FinancePage() {
           <CardHeader className="bg-slate-50/30 border-b border-black/[0.03] px-8 py-6 flex flex-row items-center justify-between">
              <div>
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <History className="h-5 w-5 opacity-40" /> Master Ledger
+                   <HistoryIcon className="h-5 w-5 opacity-40" /> Master Ledger
                 </CardTitle>
                 <CardDescription className="font-semibold text-xs">A unified timeline of all financial transactions.</CardDescription>
              </div>

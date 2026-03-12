@@ -35,6 +35,17 @@ export async function createProduct(formData: FormData) {
             notes: notes || "Initial product creation"
           }
         });
+
+        // Log as Expense
+        await tx.financialTransaction.create({
+          data: {
+            type: "Expense",
+            category: "Inventory Purchase",
+            description: `Initial stock for ${product.name} (${stock} ${product.unit}s)`,
+            amount: stock * cost,
+            date: new Date()
+          }
+        });
       }
     });
 
@@ -115,7 +126,7 @@ export async function createPackage(name: string, price: number, items: Array<{ 
 export async function restockProduct(productId: string, amount: number, notes?: string) {
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.product.update({
+      const product = await tx.product.update({
         where: { id: productId },
         data: { stock: { increment: amount } }
       });
@@ -126,6 +137,17 @@ export async function restockProduct(productId: string, amount: number, notes?: 
           change: amount,
           type: "Restock",
           notes: notes || null
+        }
+      });
+
+      // Log as Expense
+      await tx.financialTransaction.create({
+        data: {
+          type: "Expense",
+          category: "Inventory Purchase",
+          description: `Restock: ${amount} ${product.unit}s of ${product.name}`,
+          amount: amount * product.cost,
+          date: new Date()
         }
       });
     });

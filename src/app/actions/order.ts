@@ -114,6 +114,17 @@ export async function createOrder(
             method: "Cash"
           }
         });
+
+        // Add to Financial Ledger
+        await tx.financialTransaction.create({
+          data: {
+            type: "Income",
+            category: "Sales",
+            description: `Payment for Order #${order.id.slice(-5).toUpperCase()}`,
+            amount: total,
+            date: new Date()
+          }
+        });
       }
 
       revalidatePath("/route");

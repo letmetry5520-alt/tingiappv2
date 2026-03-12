@@ -33,6 +33,17 @@ export async function processPayment(orderId: string, amount: number, method: st
         }
       });
 
+      // Add to Financial Ledger
+      await tx.financialTransaction.create({
+        data: {
+          type: "Income",
+          category: "Payment Collection",
+          description: `Payment for Order #${order.id.slice(-5).toUpperCase()} (${method})`,
+          amount,
+          date: new Date()
+        }
+      });
+
       // Update Order Status
       const newTotalPaid = alreadyPaid + amount;
       const isPaid = Math.abs(order.total - newTotalPaid) < 0.01;
