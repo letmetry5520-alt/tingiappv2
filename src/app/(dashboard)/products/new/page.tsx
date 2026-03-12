@@ -14,12 +14,20 @@ import Link from "next/link";
 export default function NewProductPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [isOtherUnit, setIsOtherUnit] = useState(false);
+  const [customUnit, setCustomUnit] = useState("");
+  const [selectedUnit, setSelectedUnit] = useState("bottle");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     
     const formData = new FormData(e.currentTarget);
+    if (isOtherUnit) {
+      formData.set("unit", customUnit);
+    } else {
+      formData.set("unit", selectedUnit);
+    }
     const res = await createProduct(formData);
     
     setLoading(false);
@@ -61,21 +69,48 @@ export default function NewProductPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="unit">Unit Type *</Label>
-                <Select name="unit" defaultValue="bottle">
-                  <SelectTrigger id="unit">
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bottle">Bottle</SelectItem>
-                    <SelectItem value="sachet">Sachet</SelectItem>
-                    <SelectItem value="tray">Tray</SelectItem>
-                    <SelectItem value="pack">Pack</SelectItem>
-                    <SelectItem value="piece">Piece</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="unit">Unit Type *</Label>
+                  <Select 
+                    value={isOtherUnit ? "other" : selectedUnit} 
+                    onValueChange={(val) => {
+                      if (val === "other") {
+                        setIsOtherUnit(true);
+                      } else if (val) {
+                        setIsOtherUnit(false);
+                        setSelectedUnit(val);
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="unit" className="h-12 rounded-xl border-black/[0.05] bg-white font-bold">
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-0 shadow-2xl">
+                      <SelectItem value="bottle" className="font-bold">Bottle</SelectItem>
+                      <SelectItem value="sachet" className="font-bold">Sachet</SelectItem>
+                      <SelectItem value="tray" className="font-bold">Tray</SelectItem>
+                      <SelectItem value="pack" className="font-bold">Pack</SelectItem>
+                      <SelectItem value="piece" className="font-bold">Piece</SelectItem>
+                      <SelectItem value="container" className="font-bold">Container</SelectItem>
+                      <SelectItem value="case" className="font-bold">Case</SelectItem>
+                      <SelectItem value="sack" className="font-bold">Sack</SelectItem>
+                      <SelectItem value="other" className="font-bold text-indigo-600">Other...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isOtherUnit && (
+                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                    <Label htmlFor="customUnit">Custom Unit Name *</Label>
+                    <Input 
+                      id="customUnit" 
+                      required 
+                      placeholder="e.g. Gallon, Box" 
+                      value={customUnit}
+                      onChange={(e) => setCustomUnit(e.target.value)}
+                      className="h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm"
+                    />
+                  </div>
+                )}
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="stock">Initial Stock</Label>

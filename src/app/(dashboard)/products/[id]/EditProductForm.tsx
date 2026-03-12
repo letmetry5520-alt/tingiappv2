@@ -27,6 +27,8 @@ type Product = {
 export function EditProductForm({ product }: { product: Product }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [isOtherUnit, setIsOtherUnit] = useState(!["bottle", "sachet", "tray", "pack", "piece", "case", "bag", "box", "container", "sack"].includes(product.unit));
+  const [customUnit, setCustomUnit] = useState(!["bottle", "sachet", "tray", "pack", "piece", "case", "bag", "box", "container", "sack"].includes(product.unit) ? product.unit : "");
   const [unit, setUnit] = useState(product.unit);
 
   const margin = product.price > 0
@@ -37,7 +39,7 @@ export function EditProductForm({ product }: { product: Product }) {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.currentTarget);
-    formData.set("unit", unit);
+    formData.set("unit", isOtherUnit ? customUnit : unit);
     const res = await updateProduct(product.id, formData);
     setLoading(false);
     if (res.success) {
@@ -113,21 +115,44 @@ export function EditProductForm({ product }: { product: Product }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Unit Type *</Label>
-                <Select value={unit} onValueChange={(val) => { if (val) setUnit(val); }}>
-                  <SelectTrigger className="h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-0 shadow-2xl">
-                    {["bottle", "sachet", "tray", "pack", "piece", "case", "bag", "box"].map((u) => (
-                      <SelectItem key={u} value={u} className="font-bold py-3">
-                        {u.charAt(0).toUpperCase() + u.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Unit Type *</Label>
+                  <Select 
+                    value={isOtherUnit ? "other" : unit} 
+                    onValueChange={(val) => { 
+                      if (val === "other") {
+                        setIsOtherUnit(true);
+                      } else if (val) {
+                        setIsOtherUnit(false);
+                        setUnit(val); 
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-0 shadow-2xl">
+                      {["bottle", "sachet", "tray", "pack", "piece", "case", "bag", "box", "container", "sack"].map((u) => (
+                        <SelectItem key={u} value={u} className="font-bold py-3">
+                          {u.charAt(0).toUpperCase() + u.slice(1)}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="other" className="font-bold text-indigo-600 py-3">Other...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isOtherUnit && (
+                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Custom Unit Name *</Label>
+                    <Input 
+                      required 
+                      placeholder="e.g. Gallon, Box" 
+                      value={customUnit}
+                      onChange={(e) => setCustomUnit(e.target.value)}
+                      className="h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm"
+                    />
+                  </div>
+                )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Stock</Label>

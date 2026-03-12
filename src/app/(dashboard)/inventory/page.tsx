@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { RestockButton } from "./RestockButton";
+import { ConvertButton } from "./ConvertButton";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -130,8 +131,18 @@ export default async function InventoryPage() {
                           {p.stock} units available
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-8 text-right">
+                       <TableCell className="px-8 text-right">
                          <div className="flex items-center justify-end gap-2">
+                           <ConvertButton 
+                             sourceProduct={p} 
+                             allProducts={products.map(p => ({
+                               id: p.id,
+                               name: p.name,
+                               unit: p.unit,
+                               category: p.category,
+                               cost: p.cost
+                             }))} 
+                           />
                            <RestockButton productId={p.id} productName={p.name} />
                            <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 border-slate-200 bg-white font-bold shadow-sm text-slate-900" asChild>
                              <Link href={`/products/${p.id}`}>Modify</Link>
