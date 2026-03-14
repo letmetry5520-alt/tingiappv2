@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Save, User } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 type Customer = {
   id: string;
@@ -26,6 +27,7 @@ type Customer = {
   image: string | null;
   gallery: string[];
   facebook: string | null;
+  isBanned: boolean;
 };
 
 export function EditCustomerForm({ customer }: { customer: Customer }) {
@@ -33,6 +35,7 @@ export function EditCustomerForm({ customer }: { customer: Customer }) {
   const [loading, setLoading] = useState(false);
   const [routeDay, setRouteDay] = useState(customer.routeDay || "Monday");
   const [orderCycle, setOrderCycle] = useState(customer.expectedOrderCycle || "Weekly");
+  const [isBanned, setIsBanned] = useState(customer.isBanned || false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,12 +43,13 @@ export function EditCustomerForm({ customer }: { customer: Customer }) {
     const formData = new FormData(e.currentTarget);
     formData.set("routeDay", routeDay);
     formData.set("expectedOrderCycle", orderCycle);
+    formData.set("isBanned", isBanned.toString());
     const res = await updateCustomer(customer.id, formData);
     setLoading(false);
     if (res.success) {
       router.push("/customers");
     } else {
-      alert("Failed to update customer");
+      alert(res.error || "Failed to update customer");
     }
   }
 
@@ -137,6 +141,28 @@ export function EditCustomerForm({ customer }: { customer: Customer }) {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Account Status</Label>
+                <Select value={isBanned ? "banned" : "active"} onValueChange={(v) => setIsBanned(v === "banned")}>
+                  <SelectTrigger className={cn(
+                    "h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm",
+                    isBanned ? "text-rose-600 ring-2 ring-rose-500/20" : "text-emerald-600 ring-2 ring-emerald-500/20"
+                  )}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-0 shadow-2xl">
+                    <SelectItem value="active" className="font-bold py-3 text-emerald-600">Active Account</SelectItem>
+                    <SelectItem value="banned" className="font-bold py-3 text-rose-600">Banned Product/Store</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 opacity-50 grayscale pointer-events-none">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Internal ID</Label>
+                <Input disabled defaultValue={customer.id} className="h-12 rounded-xl border-black/[0.05] bg-slate-50 font-mono text-[10px]" />
               </div>
             </div>
 

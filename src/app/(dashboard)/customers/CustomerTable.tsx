@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Customer } from "@prisma/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,10 +9,11 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { BulkMessageModal } from "@/components/BulkMessageModal";
 
 export function CustomerTable({ data }: { data: any[] }) {
   const [search, setSearch] = useState("");
-  const [creditFilter, setCreditFilter] = useState<"all" | "active" | "none">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "none" | "banned">("all");
 
   const filteredData = data.filter((c) => {
     const matchesSearch = 
@@ -22,12 +22,16 @@ export function CustomerTable({ data }: { data: any[] }) {
       (c.zoneName && c.zoneName.toLowerCase().includes(search.toLowerCase()));
 
     const hasCredit = c.orders && c.orders.length > 0;
-    const matchesCredit = 
-      creditFilter === "all" || 
-      (creditFilter === "active" && hasCredit) || 
-      (creditFilter === "none" && !hasCredit);
+    const matchesStatus = 
+      statusFilter === "all" || 
+      (statusFilter === "active" && hasCredit) || 
+      (statusFilter === "none" && !hasCredit) ||
+      (statusFilter === "banned" && c.isBanned);
 
-    return matchesSearch && matchesCredit;
+    // If searching, keep banned hidden unless specifically filtered for banned
+    if (search && c.isBanned && statusFilter !== "banned" && statusFilter !== "all") return false;
+
+    return matchesSearch && matchesStatus;
   });
 
   return (
@@ -43,25 +47,29 @@ export function CustomerTable({ data }: { data: any[] }) {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex bg-white/60 p-1 rounded-xl ring-1 ring-black/5 backdrop-blur-sm shrink-0">
-            {[
-              { id: "all", label: "All" },
-              { id: "active", label: "Has Credit" },
-              { id: "none", label: "No Credit" }
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setCreditFilter(f.id as any)}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                  creditFilter === f.id 
-                    ? "bg-primary text-white shadow-lg shadow-primary/20" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <BulkMessageModal customers={data} />
+            <div className="flex bg-white/60 p-1 rounded-xl ring-1 ring-black/5 backdrop-blur-sm shrink-0 h-12 items-center">
+              {[
+                { id: "all", label: "All Stores" },
+                { id: "active", label: "Has Credit" },
+                { id: "none", label: "No Credit" },
+                { id: "banned", label: "Banned" }
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setStatusFilter(f.id as any)}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all h-10",
+                    statusFilter === f.id 
+                      ? (f.id === "banned" ? "bg-rose-600 text-white shadow-lg" : "bg-primary text-white shadow-lg shadow-primary/20")
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -102,7 +110,12 @@ export function CustomerTable({ data }: { data: any[] }) {
                          )}
                        </div>
                        <div className="flex flex-col">
-                         <span className="font-black text-slate-900 group-hover:text-primary transition-colors text-base tracking-tight leading-tight uppercase italic">{c.storeName}</span>
+                         <div className="flex items-center gap-2">
+                            <span className="font-black text-slate-900 group-hover:text-primary transition-colors text-base tracking-tight leading-tight uppercase italic">{c.storeName}</span>
+                            {c.isBanned && (
+                              <Badge className="bg-rose-600 text-white text-[8px] h-4 px-1.5 font-black uppercase border-0">BANNED</Badge>
+                            )}
+                         </div>
                          <span className="text-xs font-bold text-muted-foreground/60">{c.ownerName}</span>
                        </div>
                      </div>
@@ -145,7 +158,7 @@ export function CustomerTable({ data }: { data: any[] }) {
                     )}
                   </TableCell>
                   <TableCell className="px-4 md:px-0 block md:table-cell py-2 md:py-0 pb-6 md:pb-0 pl-16 md:pl-0">
-                    <div className="flex items-center gap-3">
+                    <div className={cn("flex items-center gap-3", c.isBanned && "opacity-30 grayscale pointer-events-none")}>
                       <TooltipProvider>
                         {/* SMS Option */}
                         <Tooltip>

@@ -25,15 +25,16 @@ export async function createCustomer(formData: FormData) {
         image: (formData.get("image") as string) || null,
         gallery: formData.getAll("gallery") as string[],
         facebook: (formData.get("facebook") as string) || null,
-      }
+        isBanned: formData.get("isBanned") === "true",
+      } as any
     });
 
     revalidatePath("/customers");
     revalidatePath("/route");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to create customer:", error);
-    return { success: false, error: "Failed to create customer" };
+    return { success: false, error: error.message || "Failed to create customer" };
   }
 }
 
@@ -58,15 +59,16 @@ export async function updateCustomer(id: string, formData: FormData) {
         image: (formData.get("image") as string) || null,
         gallery: (formData.getAll("gallery") as string[]).filter(Boolean),
         facebook: (formData.get("facebook") as string) || null,
-      }
+        isBanned: formData.get("isBanned") === "true",
+      } as any
     });
 
     revalidatePath("/customers");
     revalidatePath(`/customers/${id}`);
     revalidatePath("/route");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to update customer:", error);
-    return { success: false, error: "Failed to update customer" };
+    return { success: false, error: error.message || "Failed to update customer" };
   }
 }
