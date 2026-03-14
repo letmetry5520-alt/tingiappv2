@@ -26,6 +26,7 @@ model Customer {
   longitude          Float?
   image              String?  // Profile picture URL
   gallery            String[] // Store images gallery
+  facebook           String?  // Facebook profile/handle
   notes              String?
   zoneName           String?
   routeDay           String?

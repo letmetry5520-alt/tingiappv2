@@ -125,21 +125,28 @@ export default function NewCustomerPage() {
 
             <div className="space-y-4 pt-4 border-t">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                📸 Store Visuals
+                📱 Social & Visuals
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="facebook">Facebook / Messenger Handle</Label>
+                  <Input id="facebook" name="facebook" placeholder="facebook.com/username or @username" />
+                  <p className="text-[10px] text-muted-foreground">Used for quick messaging links.</p>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="image">Profile Photo URL</Label>
                   <Input id="image" name="image" placeholder="https://example.com/photo.jpg" />
                   <p className="text-[10px] text-muted-foreground">Main avatar for the store profile.</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gallery">Gallery Images (URLs)</Label>
-                  <Input name="gallery" placeholder="Image URL 1" className="mb-2" />
-                  <Input name="gallery" placeholder="Image URL 2" className="mb-2" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gallery">Gallery Images (URLs)</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <Input name="gallery" placeholder="Image URL 1" />
+                  <Input name="gallery" placeholder="Image URL 2" />
                   <Input name="gallery" placeholder="Image URL 3" />
-                  <p className="text-[10px] text-muted-foreground">Multiple store photos for the showcase.</p>
                 </div>
+                <p className="text-[10px] text-muted-foreground">Multiple store photos for the showcase.</p>
               </div>
             </div>
 

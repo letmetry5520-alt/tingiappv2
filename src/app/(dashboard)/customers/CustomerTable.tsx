@@ -5,9 +5,10 @@ import { Customer } from "@prisma/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, Search, ChevronRight, Phone } from "lucide-react";
+import { MapPin, Search, ChevronRight, Phone, MessageSquare, MessageCircle, Facebook, Eye, Edit3 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export function CustomerTable({ data }: { data: any[] }) {
@@ -73,7 +74,7 @@ export function CustomerTable({ data }: { data: any[] }) {
             <TableHead className="h-12 font-bold uppercase tracking-tighter text-[11px] text-muted-foreground">Credit Status</TableHead>
             <TableHead className="h-12 font-bold uppercase tracking-tighter text-[11px] text-muted-foreground">Location</TableHead>
             <TableHead className="h-12 font-bold uppercase tracking-tighter text-[11px] text-muted-foreground">Communication</TableHead>
-            <TableHead className="px-8 h-12 text-right font-bold uppercase tracking-tighter text-[11px] text-muted-foreground">Portal</TableHead>
+            <TableHead className="px-8 h-12 text-right font-bold uppercase tracking-tighter text-[11px] text-muted-foreground">View/Edit Profile</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="block md:table-row-group">
@@ -144,20 +145,74 @@ export function CustomerTable({ data }: { data: any[] }) {
                     )}
                   </TableCell>
                   <TableCell className="px-4 md:px-0 block md:table-cell py-2 md:py-0 pb-6 md:pb-0 pl-16 md:pl-0">
-                     <a 
-                       href={`tel:${c.phone}`}
-                       className="flex items-center gap-1.5 text-slate-600 font-bold text-xs hover:text-primary transition-colors group/tel"
-                     >
-                       <Phone className="h-3 w-3 opacity-30 shrink-0 group-hover/tel:text-primary transition-colors" />
-                       {c.phone}
-                     </a>
+                    <div className="flex items-center gap-3">
+                      <TooltipProvider>
+                        {/* SMS Option */}
+                        <Tooltip>
+                          <TooltipTrigger asChild nativeButton={false}>
+                            <a 
+                              href={`sms:${c.phone}`}
+                              className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-blue-500 hover:text-white transition-all border border-black/[0.05] shadow-sm transform hover:-translate-y-1"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-900 text-white border-0 font-bold text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-lg">
+                            Send SMS
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {/* Phone Option */}
+                        <Tooltip>
+                          <TooltipTrigger asChild nativeButton={false}>
+                            <a 
+                              href={`tel:${c.phone}`}
+                              className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-emerald-500 hover:text-white transition-all border border-black/[0.05] shadow-sm transform hover:-translate-y-1"
+                            >
+                              <Phone className="h-4 w-4" />
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-900 text-white border-0 font-bold text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-lg">
+                            Call Owner
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {/* Messenger/Facebook Option */}
+                        {c.facebook && (
+                          <Tooltip>
+                            <TooltipTrigger asChild nativeButton={false}>
+                              <a 
+                                href={c.facebook.startsWith('http') ? c.facebook : `https://m.me/${c.facebook.replace('@', '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-blue-600 hover:text-white transition-all border border-black/[0.05] shadow-sm transform hover:-translate-y-1"
+                              >
+                                {c.facebook.includes('facebook') ? <Facebook className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-slate-900 text-white border-0 font-bold text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-lg">
+                              Message on FB
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </TooltipProvider>
+                    </div>
                   </TableCell>
                   <TableCell className="px-4 md:px-8 md:text-right block md:table-cell py-4 md:py-0 absolute top-4 right-0 md:static">
-                    <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-200 bg-white shadow-md hover:bg-primary hover:text-white hover:border-primary transition-all group-hover:scale-105" asChild>
-                      <Link href={`/customers/${c.id}`}>
-                        <ChevronRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg border-slate-200 bg-white shadow-sm hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all font-bold text-[10px] gap-1.5 uppercase tracking-tight" asChild>
+                        <Link href={`/customers/${c.id}`}>
+                          <Eye className="h-3 w-3" />
+                          <span>View</span>
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg border-slate-200 bg-white shadow-sm hover:bg-primary hover:text-white hover:border-primary transition-all font-bold text-[10px] gap-1.5 uppercase tracking-tight" asChild>
+                        <Link href={`/customers/${c.id}/edit`}>
+                          <Edit3 className="h-3 w-3" />
+                          <span>Edit</span>
+                        </Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );

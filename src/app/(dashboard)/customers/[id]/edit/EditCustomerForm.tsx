@@ -25,6 +25,7 @@ type Customer = {
   longitude: number | null;
   image: string | null;
   gallery: string[];
+  facebook: string | null;
 };
 
 export function EditCustomerForm({ customer }: { customer: Customer }) {
@@ -42,7 +43,7 @@ export function EditCustomerForm({ customer }: { customer: Customer }) {
     const res = await updateCustomer(customer.id, formData);
     setLoading(false);
     if (res.success) {
-      router.push(`/customers/${customer.id}`);
+      router.push("/customers");
     } else {
       alert("Failed to update customer");
     }
@@ -150,18 +151,26 @@ export function EditCustomerForm({ customer }: { customer: Customer }) {
               </div>
             </div>
 
-            {/* Store Visuals */}
+            {/* Social & Visuals */}
             <div className="space-y-4 pt-2 border-t border-black/[0.04]">
-              <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Store Visuals</h3>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Profile Photo URL</Label>
-                <Input name="image" defaultValue={customer.image || ""} placeholder="https://example.com/photo.jpg" className="h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm" />
+              <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Social & Visuals</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Facebook / Messenger Handle</Label>
+                  <Input name="facebook" defaultValue={customer.facebook || ""} placeholder="facebook.com/username" className="h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Profile Photo URL</Label>
+                  <Input name="image" defaultValue={customer.image || ""} placeholder="https://example.com/photo.jpg" className="h-12 rounded-xl border-black/[0.05] bg-white font-bold shadow-sm" />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Gallery Images (URLs)</Label>
-                {gallerySlots.map((url, i) => (
-                  <Input key={i} name="gallery" defaultValue={url} placeholder={`Gallery image URL ${i + 1}`} className="h-12 rounded-xl border-black/[0.05] bg-white font-semibold shadow-sm mb-2" />
-                ))}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  {gallerySlots.map((url, i) => (
+                    <Input key={i} name="gallery" defaultValue={url} placeholder={`Gallery image URL ${i + 1}`} className="h-12 rounded-xl border-black/[0.05] bg-white font-semibold shadow-sm" />
+                  ))}
+                </div>
               </div>
             </div>
 

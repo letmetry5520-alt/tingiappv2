@@ -24,6 +24,7 @@ export async function createCustomer(formData: FormData) {
         longitude: lng ? parseFloat(lng) : null,
         image: (formData.get("image") as string) || null,
         gallery: formData.getAll("gallery") as string[],
+        facebook: (formData.get("facebook") as string) || null,
       }
     });
 
@@ -56,6 +57,7 @@ export async function updateCustomer(id: string, formData: FormData) {
         longitude: lng ? parseFloat(lng) : null,
         image: (formData.get("image") as string) || null,
         gallery: (formData.getAll("gallery") as string[]).filter(Boolean),
+        facebook: (formData.get("facebook") as string) || null,
       }
     });
 
