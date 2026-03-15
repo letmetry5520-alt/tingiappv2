@@ -128,24 +128,37 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
     if (!receiptRef.current) return;
 
     try {
-      // Use dynamic import for html2canvas
       const html2canvas = (await import("html2canvas")).default;
       
-      // Clone the receipt to a hidden container to avoid Dialog/Overlay interference
       const clone = receiptRef.current.cloneNode(true) as HTMLElement;
       clone.style.position = "fixed";
       clone.style.top = "-9999px";
       clone.style.left = "-9999px";
-      clone.style.width = "400px"; // Force a consistent width for the receipt image
+      clone.style.width = "400px";
+      clone.style.background = "#ffffff";
+      clone.style.color = "#000000";
+
+      // CRITICAL: Force standard colors and remove oklch/lab variables in the clone
+      const sanitize = (el: HTMLElement) => {
+        el.style.color = "black";
+        el.style.backgroundColor = "transparent";
+        el.style.borderColor = "black";
+        // Remove classes that might use oklch/lab variables via Tailwind v4
+        el.className = el.className.replace(/(text|bg|border|ring)-\S+/g, "");
+        Array.from(el.children).forEach(child => sanitize(child as HTMLElement));
+      };
+      sanitize(clone);
+      // Ensure the root of receipt is white
+      clone.style.backgroundColor = "#ffffff";
+      
       document.body.appendChild(clone);
 
       const canvas = await html2canvas(clone, {
-        scale: 2, // 2x is enough for HD and more compatible
+        scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         logging: false,
         onclone: (clonedDoc) => {
-          // Ensure pesos signs are rendered as plain text or standard symbols if they look weird
           const pesos = clonedDoc.querySelectorAll('.pesos-sign');
           pesos.forEach(p => (p as HTMLElement).innerText = 'P'); 
         }
@@ -155,28 +168,19 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
 
       canvas.toBlob(async (blob) => {
         if (!blob) {
-          alert("Empty image generated. Please try again.");
+          alert("Could not generate image. Please try again.");
           return;
         }
         
         const fileName = `receipt-${order.id.slice(-8)}.png`;
         const file = new File([blob], fileName, { type: "image/png" });
+        const shareData = { files: [file], title: `Receipt #${order.id.slice(-8).toUpperCase()}` };
 
-        // Robust check for share capability
-        const shareData = {
-          files: [file],
-          title: `Receipt #${order.id.slice(-8).toUpperCase()}`,
-        };
-
-        const canShare = !!(navigator.canShare && navigator.canShare(shareData));
-
-        if (canShare && navigator.share) {
+        if (navigator.canShare && navigator.canShare(shareData) && navigator.share) {
           try {
             await navigator.share(shareData);
           } catch (shareErr: any) {
-            if (shareErr.name !== 'AbortError') {
-              triggerDownload(blob);
-            }
+            if (shareErr.name !== 'AbortError') triggerDownload(blob);
           }
         } else {
           triggerDownload(blob);
