@@ -97,21 +97,21 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
                 <tr>
                   <td class="col-qty">${item.quantity}</td>
                   <td class="col-desc" style="font-weight:bold">${item.name}</td>
-                  <td class="col-unit" style="text-align:right">₱${item.price.toFixed(2)}</td>
-                  <td class="col-amt" style="font-weight:bold">₱${(item.price * item.quantity).toFixed(2)}</td>
+                  <td class="col-unit" style="text-align:right">₱${(item.price || 0).toFixed(2)}</td>
+                  <td class="col-amt" style="font-weight:bold">₱${((item.price || 0) * item.quantity).toFixed(2)}</td>
                 </tr>
-                ${item.type === 'package' && item.packageItems ? item.packageItems.map((sub: any) => `
+                ${item.type === 'package' && item.packageItems ? (item.packageItems || []).map((sub: any) => `
                   <tr>
                     <td></td>
                     <td colspan="2" style="font-size: 9px; color: #555; padding-left: 10px;">• ${sub.name} x${sub.quantity}</td>
-                    <td style="font-size: 9px; color: #555; text-align: right;">₱${sub.unitPrice.toFixed(2)}</td>
+                    <td style="font-size: 9px; color: #555; text-align: right;">₱${(sub.unitPrice || 0).toFixed(2)}</td>
                   </tr>
                 `).join('') : ''}
-                ${item.type === 'package' && item.deliveryFee > 0 ? `
+                ${item.type === 'package' && (item.deliveryFee || 0) > 0 ? `
                   <tr>
                     <td></td>
                     <td colspan="2" style="font-size: 9px; color: #555; padding-left: 10px; font-style: italic;">+ Delivery Fee</td>
-                    <td style="font-size: 9px; color: #555; text-align: right;">₱${item.deliveryFee.toFixed(2)}</td>
+                    <td style="font-size: 9px; color: #555; text-align: right;">₱${(item.deliveryFee || 0).toFixed(2)}</td>
                   </tr>
                 ` : ''}
               `).join('')}
@@ -154,8 +154,8 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
       for (const item of items) {
         contentHeight += baseLineH;
         if (item.type === "package" && item.packageItems) {
-          contentHeight += item.packageItems.length * subLineH + 4; // breakdown items
-          if (item.deliveryFee > 0) contentHeight += subLineH; // delivery fee line
+          contentHeight += (item.packageItems || []).length * subLineH + 4; // breakdown items
+          if ((item.deliveryFee || 0) > 0) contentHeight += subLineH; // delivery fee line
         }
         contentHeight += 6; // gap between items
       }
@@ -246,11 +246,11 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
         
         ctx.font = "12px 'Courier New', monospace";
         ctx.textAlign = "center";
-        ctx.fillText(`P${item.price.toFixed(2)}`, width - 120, y);
+        ctx.fillText(`P${(item.price || 0).toFixed(2)}`, width - 120, y);
         
         ctx.textAlign = "right";
         ctx.font = "bold 12px 'Courier New', monospace";
-        ctx.fillText(`P${(item.price * item.quantity).toFixed(2)}`, width - padX, y);
+        ctx.fillText(`P${((item.price || 0) * item.quantity).toFixed(2)}`, width - padX, y);
         y += baseLineH;
 
         // Breakdown for packages
@@ -264,7 +264,7 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
 
           ctx.font = "10px 'Courier New', monospace";
           ctx.fillStyle = "#666666";
-          for (const sub of item.packageItems) {
+          for (const sub of (item.packageItems || [])) {
             ctx.textAlign = "left";
             let subName = sub.name as string;
             const maxSubW = width - padX - 50 - 110;
@@ -275,17 +275,17 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
             ctx.textAlign = "center";
             ctx.fillText(`x${sub.quantity}`, width - 120, y);
             ctx.textAlign = "right";
-            ctx.fillText(`P${sub.unitPrice.toFixed(2)}`, width - padX, y);
+            ctx.fillText(`P${(sub.unitPrice || 0).toFixed(2)}`, width - padX, y);
             y += subLineH;
           }
 
-          if (item.deliveryFee > 0) {
+          if ((item.deliveryFee || 0) > 0) {
             ctx.font = "italic 10px 'Courier New', monospace";
             ctx.fillStyle = "#888888";
             ctx.textAlign = "left";
             ctx.fillText("+ Delivery Fee", padX + 45, y);
             ctx.textAlign = "right";
-            ctx.fillText(`P${item.deliveryFee.toFixed(2)}`, width - padX, y);
+            ctx.fillText(`P${(item.deliveryFee || 0).toFixed(2)}`, width - padX, y);
             y += subLineH;
           }
         }
@@ -399,17 +399,17 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
                   {/* Breakdown for packages */}
                   {item.type === "package" && item.packageItems && (
                     <div className="ml-[30px] border-l-2 border-slate-200 pl-3 pb-1 space-y-1">
-                      {item.packageItems.map((sub: any, si: number) => (
+                      {(item.packageItems || []).map((sub: any, si: number) => (
                         <div key={si} className="grid grid-cols-[1fr_50px_60px] gap-1 text-[11px] text-slate-600 font-medium">
                           <span className="truncate">{sub.name}</span>
                           <span className="text-center">x{sub.quantity}</span>
-                          <span className="text-right">₱{sub.unitPrice.toFixed(2)}</span>
+                          <span className="text-right">₱{(sub.unitPrice || 0).toFixed(2)}</span>
                         </div>
                       ))}
-                      {item.deliveryFee > 0 && (
+                      {(item.deliveryFee || 0) > 0 && (
                         <div className="grid grid-cols-[1fr_60px] gap-1 text-[11px] text-slate-500 italic mt-0.5 pt-0.5 border-t border-slate-100">
                           <span>+ Delivery Fee</span>
-                          <span className="text-right">₱{item.deliveryFee.toFixed(2)}</span>
+                          <span className="text-right">₱{(item.deliveryFee || 0).toFixed(2)}</span>
                         </div>
                       )}
                     </div>
