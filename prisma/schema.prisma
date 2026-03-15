@@ -62,6 +62,7 @@ model Package {
   name        String
   items       Json     // Array of { productId, quantity }
   price       Float
+  deliveryFee Float?   // Optional delivery fee included in the bundle price
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

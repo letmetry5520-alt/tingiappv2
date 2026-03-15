@@ -96,10 +96,24 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
               ${order.items.map((item: any) => `
                 <tr>
                   <td class="col-qty">${item.quantity}</td>
-                  <td class="col-desc">${item.name}</td>
+                  <td class="col-desc" style="font-weight:bold">${item.name}</td>
                   <td class="col-unit" style="text-align:right">₱${item.price.toFixed(2)}</td>
-                  <td class="col-amt">₱${(item.price * item.quantity).toFixed(2)}</td>
+                  <td class="col-amt" style="font-weight:bold">₱${(item.price * item.quantity).toFixed(2)}</td>
                 </tr>
+                ${item.type === 'package' && item.packageItems ? item.packageItems.map((sub: any) => `
+                  <tr>
+                    <td></td>
+                    <td colspan="2" style="font-size: 9px; color: #555; padding-left: 10px;">• ${sub.name} x${sub.quantity}</td>
+                    <td style="font-size: 9px; color: #555; text-align: right;">₱${sub.unitPrice.toFixed(2)}</td>
+                  </tr>
+                `).join('') : ''}
+                ${item.type === 'package' && item.deliveryFee > 0 ? `
+                  <tr>
+                    <td></td>
+                    <td colspan="2" style="font-size: 9px; color: #555; padding-left: 10px; font-style: italic;">+ Delivery Fee</td>
+                    <td style="font-size: 9px; color: #555; text-align: right;">₱${item.deliveryFee.toFixed(2)}</td>
+                  </tr>
+                ` : ''}
               `).join('')}
             </tbody>
           </table>
@@ -129,23 +143,35 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
 
   const handleShare = async () => {
     try {
-      // Build the canvas entirely from data — no DOM, no oklch, no css variables.
       const items: any[] = order.items;
-      const lineH = 22;
+      const baseLineH = 22;
+      const subLineH = 16;
       const padX = 20;
       const width = 400;
+      
+      // Calculate height dynamically
+      let contentHeight = 0;
+      for (const item of items) {
+        contentHeight += baseLineH;
+        if (item.type === "package" && item.packageItems) {
+          contentHeight += item.packageItems.length * subLineH + 4; // breakdown items
+          if (item.deliveryFee > 0) contentHeight += subLineH; // delivery fee line
+        }
+        contentHeight += 6; // gap between items
+      }
+
       const headerH = 90;
       const infoH = 80;
-      const itemsH = items.length * lineH + 10;
+      const itemsH = contentHeight + 20;
       const totalH = 50;
       const footerH = 50;
       const totalHeight = headerH + infoH + itemsH + totalH + footerH + 40;
 
       const canvas = document.createElement("canvas");
-      canvas.width = width * 2;     // 2x resolution
+      canvas.width = width * 2;
       canvas.height = totalHeight * 2;
       const ctx = canvas.getContext("2d")!;
-      ctx.scale(2, 2);              // Draw at 2x
+      ctx.scale(2, 2);
 
       // Background
       ctx.fillStyle = "#ffffff";
@@ -204,28 +230,66 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
       ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(width - padX, y); ctx.stroke(); y += 12;
 
       // --- Items ---
-      ctx.font = "12px 'Courier New', monospace";
       for (const item of items) {
+        // Main Item Line
+        ctx.font = "bold 12px 'Courier New', monospace";
         ctx.textAlign = "left";
         ctx.fillStyle = "#000000";
         ctx.fillText(String(item.quantity), padX, y);
-        // Truncate long names to fit
+        
         const maxNameW = width - padX - 40 - 160;
         let name = item.name as string;
-        ctx.font = "bold 12px 'Courier New', monospace";
         while (ctx.measureText(name).width > maxNameW && name.length > 1) {
           name = name.slice(0, -1);
         }
         ctx.fillText(name === item.name ? name : name + "…", padX + 40, y);
-        // Unit Price (center-right)
+        
         ctx.font = "12px 'Courier New', monospace";
         ctx.textAlign = "center";
         ctx.fillText(`P${item.price.toFixed(2)}`, width - 120, y);
-        // Total (far right)
+        
         ctx.textAlign = "right";
         ctx.font = "bold 12px 'Courier New', monospace";
         ctx.fillText(`P${(item.price * item.quantity).toFixed(2)}`, width - padX, y);
-        y += lineH;
+        y += baseLineH;
+
+        // Breakdown for packages
+        if (item.type === "package" && item.packageItems) {
+          ctx.strokeStyle = "#cccccc";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(padX + 35, y - 10);
+          ctx.lineTo(padX + 35, y + item.packageItems.length * subLineH - 10);
+          ctx.stroke();
+
+          ctx.font = "10px 'Courier New', monospace";
+          ctx.fillStyle = "#666666";
+          for (const sub of item.packageItems) {
+            ctx.textAlign = "left";
+            let subName = sub.name as string;
+            const maxSubW = width - padX - 50 - 110;
+            while (ctx.measureText(subName).width > maxSubW && subName.length > 1) {
+              subName = subName.slice(0, -1);
+            }
+            ctx.fillText(subName === sub.name ? subName : subName + "…", padX + 45, y);
+            ctx.textAlign = "center";
+            ctx.fillText(`x${sub.quantity}`, width - 120, y);
+            ctx.textAlign = "right";
+            ctx.fillText(`P${sub.unitPrice.toFixed(2)}`, width - padX, y);
+            y += subLineH;
+          }
+
+          if (item.deliveryFee > 0) {
+            ctx.font = "italic 10px 'Courier New', monospace";
+            ctx.fillStyle = "#888888";
+            ctx.textAlign = "left";
+            ctx.fillText("+ Delivery Fee", padX + 45, y);
+            ctx.textAlign = "right";
+            ctx.fillText(`P${item.deliveryFee.toFixed(2)}`, width - padX, y);
+            y += subLineH;
+          }
+        }
+        y += 6; // gap
       }
 
       // Dashed line before total
@@ -248,7 +312,6 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
       // Convert to blob and share/download
       canvas.toBlob(async (blob) => {
         if (!blob) { alert("Could not generate image. Please try again."); return; }
-
         const fileName = `receipt-${order.id.slice(-8)}.png`;
         const file = new File([blob], fileName, { type: "image/png" });
         const shareData = { files: [file], title: `Receipt #${order.id.slice(-8).toUpperCase()}` };
@@ -323,13 +386,34 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
               <span className="text-right">Unit Price</span>
               <span className="text-right">Total</span>
             </div>
-            <div className="space-y-3 py-2 min-h-[100px]">
+            <div className="space-y-4 py-2 min-h-[100px]">
               {order.items.map((item: any, i: number) => (
-                <div key={i} className="grid grid-cols-[30px_1fr_65px_70px] gap-1 items-start">
-                  <span className="font-bold">{item.quantity}</span>
-                  <span className="font-bold uppercase leading-[1.3] break-words">{item.name}</span>
-                  <span className="text-right"><span className="pesos-sign">₱</span>{item.price.toFixed(2)}</span>
-                  <span className="text-right font-black"><span className="pesos-sign">₱</span>{(item.price * item.quantity).toFixed(2)}</span>
+                <div key={i} className="space-y-1">
+                  <div className="grid grid-cols-[30px_1fr_65px_70px] gap-1 items-start">
+                    <span className="font-bold">{item.quantity}</span>
+                    <span className="font-bold uppercase leading-[1.3] break-words">{item.name}</span>
+                    <span className="text-right"><span className="pesos-sign">₱</span>{item.price.toFixed(2)}</span>
+                    <span className="text-right font-black"><span className="pesos-sign">₱</span>{(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                  
+                  {/* Breakdown for packages */}
+                  {item.type === "package" && item.packageItems && (
+                    <div className="ml-[30px] border-l-2 border-slate-200 pl-3 pb-1 space-y-1">
+                      {item.packageItems.map((sub: any, si: number) => (
+                        <div key={si} className="grid grid-cols-[1fr_50px_60px] gap-1 text-[11px] text-slate-600 font-medium">
+                          <span className="truncate">{sub.name}</span>
+                          <span className="text-center">x{sub.quantity}</span>
+                          <span className="text-right">₱{sub.unitPrice.toFixed(2)}</span>
+                        </div>
+                      ))}
+                      {item.deliveryFee > 0 && (
+                        <div className="grid grid-cols-[1fr_60px] gap-1 text-[11px] text-slate-500 italic mt-0.5 pt-0.5 border-t border-slate-100">
+                          <span>+ Delivery Fee</span>
+                          <span className="text-right">₱{item.deliveryFee.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

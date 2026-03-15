@@ -19,6 +19,7 @@ export function PackageForm({ products }: { products: ProductType[] }) {
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [deliveryFee, setDeliveryFee] = useState("");
   const [items, setItems] = useState<Array<{ productId: string; quantity: number }>>([]);
   const [selectedProduct, setSelectedProduct] = useState("");
 
@@ -48,7 +49,9 @@ export function PackageForm({ products }: { products: ProductType[] }) {
       const p = products.find(p => p.id === item.productId);
       return sum + (p?.price || 0) * item.quantity;
     }, 0);
-    setPrice(total.toFixed(2));
+    // Add delivery fee to suggested price
+    const fee = parseFloat(deliveryFee) || 0;
+    setPrice((total + fee).toFixed(2));
   };
 
   async function onSubmit(e: React.FormEvent) {
@@ -56,7 +59,12 @@ export function PackageForm({ products }: { products: ProductType[] }) {
     if (items.length === 0) return alert("Add at least one item");
     
     setLoading(true);
-    const res = await createPackage(name, parseFloat(price), items);
+    const res = await createPackage(
+      name, 
+      parseFloat(price), 
+      items, 
+      deliveryFee ? parseFloat(deliveryFee) : undefined
+    );
     
     setLoading(false);
     if (res.success) {
@@ -85,16 +93,20 @@ export function PackageForm({ products }: { products: ProductType[] }) {
             <CardTitle>Bundle Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Package Name *</Label>
                 <Input id="name" required placeholder="Super Saver Bundle" value={name} onChange={e => setName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deliveryFee">Optional Delivery Fee (₱)</Label>
+                <Input id="deliveryFee" type="number" step="0.01" placeholder="0.00" value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} />
               </div>
               <div className="space-y-2 relative">
                 <Label htmlFor="price">Selling Price (₱) *</Label>
                 <div className="flex gap-2">
                   <Input id="price" type="number" step="0.01" required placeholder="0.00" value={price} onChange={e => setPrice(e.target.value)} />
-                  <Button type="button" variant="outline" onClick={calculateDefaultPrice} title="Sum individual prices">Calc</Button>
+                  <Button type="button" variant="outline" onClick={calculateDefaultPrice} title="Sum items + delivery fee">Calc</Button>
                 </div>
               </div>
             </div>

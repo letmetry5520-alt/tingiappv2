@@ -68,11 +68,11 @@ export async function createOrder(
           
           cost += pkgCost * item.quantity;
           
-          // Get product names for the manifest breakdown
+          // Get product names + prices for the manifest breakdown
           const pkgManifestItems = [];
           for (const pItem of pkgItems) {
-            const p = await tx.product.findUnique({ where: { id: pItem.productId }, select: { name: true } });
-            pkgManifestItems.push({ name: p?.name || "Unknown Product", quantity: pItem.quantity });
+            const p = await tx.product.findUnique({ where: { id: pItem.productId }, select: { name: true, price: true, unit: true } });
+            pkgManifestItems.push({ name: p?.name || "Unknown Product", quantity: pItem.quantity, unitPrice: p?.price || 0, unit: p?.unit || "" });
           }
 
           finalItemsList.push({ 
@@ -81,7 +81,8 @@ export async function createOrder(
             name: pkg.name, 
             price: pkg.price, 
             quantity: item.quantity,
-            packageItems: pkgManifestItems // Snapshot of what's inside for the manifest
+            deliveryFee: (pkg as any).deliveryFee || 0,
+            packageItems: pkgManifestItems // Full breakdown with unit prices for receipt
           });
         }
       }

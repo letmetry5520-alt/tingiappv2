@@ -104,13 +104,14 @@ export async function updateProduct(id: string, formData: FormData) {
   }
 }
 
-export async function createPackage(name: string, price: number, items: Array<{ productId: string, quantity: number }>) {
+export async function createPackage(name: string, price: number, items: Array<{ productId: string, quantity: number }>, deliveryFee?: number) {
   try {
     await prisma.package.create({
       data: {
         name,
         price,
         items, // saved as JSON
+        deliveryFee: deliveryFee || null,
       }
     });
 
