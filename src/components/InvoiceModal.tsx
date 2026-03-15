@@ -23,12 +23,12 @@ type InvoiceModalProps = {
 };
 
 export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false }: InvoiceModalProps) {
-  const printRef = useRef<HTMLDivElement>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   if (!order) return null;
 
   const handlePrint = () => {
-    const printContent = printRef.current;
+    const printContent = receiptRef.current;
     if (!printContent) return;
 
     const printWindow = window.open("", "_blank");
@@ -125,38 +125,52 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
   };
 
   const handleShare = async () => {
-    const text = `
-MrTingi Online Supplier
-Tel (0965-445-9305)
-Marilao Bulacan
-Receipt #: ${order.id.slice(-8).toUpperCase()}
-Date: ${format(new Date(order.createdAt), "yyyy-MM-dd HH:mm")}
+    if (!receiptRef.current) return;
 
-Customer: ${order.customer?.storeName || "Guest"}
-------------------------------------
-Qty | Item Description | Amount |
-------------------------------------
-${order.items.map((item: any) => `${item.quantity.toString().padEnd(3)} | ${item.name.padEnd(16).slice(0, 16)} | ₱${(item.price * item.quantity).toFixed(0).padStart(6)} |`).join('\n')}
-------------------------------------
-               Total | ₱${order.total.toFixed(2)} |
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 3, // Very high definition
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+      });
 
-Status: Delivered
-By: Tingiapp
-    `.trim();
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], `receipt-${order.id.slice(-8)}.png`, { type: "image/png" });
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Order Receipt',
-          text: text,
-        });
-      } catch (err) {
-        console.error("Share failed:", err);
-      }
-    } else {
-      await navigator.clipboard.writeText(text);
-      alert("Plain text receipt copied to clipboard! You can now paste it in Messenger.");
+        // Check if sharing is supported on this device
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: `Receipt #${order.id.slice(-8).toUpperCase()}`,
+            });
+          } catch (shareErr) {
+            console.error("Shared failed", shareErr);
+            triggerDownload(blob);
+          }
+        } else {
+          triggerDownload(blob);
+        }
+      }, "image/png");
+    } catch (err) {
+      console.error("Image capture failed:", err);
+      alert("Could not generate image receipt. Try printing instead.");
     }
+  };
+
+  const triggerDownload = (blob: Blob) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `receipt-${order.id.slice(-8)}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    alert("Receipt image saved! You can now send it manually via Messenger or Gallery.");
   };
 
   return (
@@ -168,58 +182,71 @@ By: Tingiapp
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-2 border-black bg-white rounded-none shadow-none font-mono text-black">
-        <div className="p-6 space-y-4">
-          <div className="text-center space-y-1">
-            <h2 className="text-lg font-bold uppercase tracking-tight">MrTingi Online Supplier</h2>
-            <div className="text-xs">Tel (0965-445-9305)</div>
-            <div className="text-xs">Marilao Bulacan</div>
+      <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden border-0 bg-transparent shadow-none font-mono">
+        <div 
+          ref={receiptRef}
+          className="bg-white p-8 text-black border-[3px] border-black m-2"
+        >
+          <div className="text-center space-y-1 mb-6">
+            <h2 className="text-xl font-black uppercase tracking-tight">MrTingi Online Supplier</h2>
+            <div className="text-[12px] font-bold">Tel (0965-445-9305)</div>
+            <div className="text-[12px] font-bold">Marilao Bulacan</div>
           </div>
 
-          <div className="text-xs space-y-1 border-t border-b border-black border-dashed py-3">
-            <div>Receipt #: {order.id.slice(-8).toUpperCase()}</div>
-            <div>Date: {format(new Date(order.createdAt), "yyyy-MM-dd HH:mm")}</div>
-            <div className="pt-1">Customer: <span className="font-bold">{order.customer?.storeName}</span></div>
+          <div className="text-[12px] space-y-2 border-t-2 border-b-2 border-black border-dashed py-4 mb-4">
+            <div className="flex justify-between">
+              <span>Receipt #:</span>
+              <span className="font-bold">{order.id.slice(-8).toUpperCase()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Date:</span>
+              <span className="font-bold">{format(new Date(order.createdAt), "yyyy-MM-dd HH:mm")}</span>
+            </div>
+            <div className="pt-1 flex flex-col">
+              <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Customer:</span>
+              <span className="text-lg font-black leading-tight">{order.customer?.storeName}</span>
+            </div>
           </div>
 
-          <div className="text-[11px] leading-tight">
-            <div className="grid grid-cols-[30px_1fr_80px] font-bold border-b border-black pb-1 mb-1">
+          <div className="text-[13px] leading-tight">
+            <div className="grid grid-cols-[35px_1fr_90px] font-black border-b-2 border-black pb-2 mb-2 uppercase text-[11px]">
               <span>Qty</span>
               <span>Description</span>
               <span className="text-right">Amount</span>
             </div>
-            <div className="space-y-2 py-1">
+            <div className="space-y-3 py-2 min-h-[100px]">
               {order.items.map((item: any, i: number) => (
-                <div key={i} className="grid grid-cols-[30px_1fr_80px] gap-2">
-                  <span>{item.quantity}</span>
-                  <span className="break-words">{item.name}</span>
-                  <span className="text-right font-bold">₱{(item.price * item.quantity).toFixed(2)}</span>
+                <div key={i} className="grid grid-cols-[35px_1fr_90px] gap-2 items-start">
+                  <span className="font-bold">{item.quantity}</span>
+                  <span className="font-bold uppercase leading-[1.3] break-words">{item.name}</span>
+                  <span className="text-right font-black">₱{(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
-            <div className="border-t border-black border-dashed mt-2 pt-2 text-right text-base font-bold">
-              TOTAL | ₱{order.total.toFixed(2)}
+            <div className="border-t-2 border-black border-dashed mt-4 pt-4 flex justify-end items-center gap-3">
+              <span className="text-xl font-black">TOTAL |</span>
+              <span className="text-2xl font-black">₱{order.total.toFixed(2)}</span>
             </div>
           </div>
 
-          <div className="text-[10px] pt-2">
+          <div className="text-[10px] pt-8 space-y-1 font-bold">
             <div>Status: Delivered</div>
             <div>By: Tingiapp</div>
           </div>
         </div>
 
-        <DialogFooter className="p-6 bg-slate-50 border-t border-black flex flex-col gap-2 sm:flex-row">
+        <DialogFooter className="p-4 flex flex-col gap-2 sm:flex-row bg-white/80 backdrop-blur pb-6 px-6">
           <Button 
             onClick={handleShare}
-            variant="outline" 
-            className="flex-1 rounded-none h-12 font-bold uppercase text-xs tracking-widest gap-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
+            className="flex-1 rounded-xl h-12 font-black uppercase text-xs tracking-widest gap-2 bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/30"
           >
             <Share2 className="h-4 w-4" />
-            Share Plain Text
+            Share Image
           </Button>
           <Button 
             onClick={handlePrint}
-            className="flex-1 rounded-none h-12 font-bold uppercase text-xs tracking-widest gap-2 bg-black text-white hover:bg-slate-800 transition-colors"
+            variant="outline"
+            className="flex-1 rounded-xl h-12 font-black uppercase text-xs tracking-widest gap-2 border-2 border-black bg-white hover:bg-slate-50"
           >
             <Printer className="h-4 w-4" />
             Print Thermal
