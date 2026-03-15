@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, ShoppingCart, Trash2, Plus } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner"; // Assuming sonner or just native alert
+import { toast } from "sonner";
+import { InvoiceModal } from "@/components/InvoiceModal";
+import { getOrderById } from "@/app/actions/order";
 
 type Customer = { id: string; storeName: string; ownerName: string; address: string };
 type Product = { id: string; name: string; unit: string; price: number; stock: number };
@@ -37,6 +39,9 @@ export function OrderForm({
   const [customerId, setCustomerId] = useState(defaultCustomerId || "");
   const [paymentType, setPaymentType] = useState<"Cash" | "Utang">("Cash");
   const [cart, setCart] = useState<CartItem[]>([]);
+
+  const [lastCreatedOrder, setLastCreatedOrder] = useState<any>(null);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedPackageId, setSelectedPackageId] = useState("");
@@ -90,8 +95,15 @@ export function OrderForm({
     const res = await createOrder(customerId, paymentType, orderItems);
     
     setLoading(false);
-    if (res.success) {
-      router.push("/dashboard");
+    if (res.success && "orderId" in res) {
+      const fullOrder = await getOrderById(res.orderId);
+      if (fullOrder) {
+        setLastCreatedOrder(fullOrder);
+        setIsInvoiceModalOpen(true);
+        setCart([]); // Clear cart
+      } else {
+        router.push("/dashboard");
+      }
     } else {
       alert(`Error: ${"error" in res ? res.error : "Unknown error"}`);
     }
@@ -256,6 +268,15 @@ export function OrderForm({
           </Card>
         </div>
       </div>
+
+      <InvoiceModal 
+        order={lastCreatedOrder} 
+        isOpen={isInvoiceModalOpen} 
+        onOpenChange={(open) => {
+          setIsInvoiceModalOpen(open);
+          if (!open) router.push("/orders");
+        }} 
+      />
     </div>
   );
 }

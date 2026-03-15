@@ -10,7 +10,9 @@ import { PaymentDialog } from "../receivables/PaymentDialog";
 import { DeliveryStatusSelect } from "./DeliveryStatusSelect";
 import { OrderDetailsDialog } from "./OrderDetailsDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Info, MapPin, User as UserIcon, Phone, Navigation } from "lucide-react";
+import { Info, MapPin, User as UserIcon, Phone, Navigation, Receipt } from "lucide-react";
+import { InvoiceModal } from "@/components/InvoiceModal";
+import { OrderInvoiceWrapper } from "./OrderInvoiceWrapper";
 
 export const dynamic = "force-dynamic";
 
@@ -49,13 +51,14 @@ export default async function OrdersPage() {
               <TableHead>Type</TableHead>
               <TableHead>Payment</TableHead>
               <TableHead>Logistic</TableHead>
+              <TableHead className="text-center">Invoice</TableHead>
               <TableHead className="text-right">Manage</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {orders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                   No orders found. Create a new one.
                 </TableCell>
               </TableRow>
@@ -159,6 +162,9 @@ export default async function OrdersPage() {
                            </Badge>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <OrderInvoiceWrapper order={order} />
                     </TableCell>
                      <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

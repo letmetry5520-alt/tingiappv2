@@ -173,3 +173,16 @@ export async function updateDeliveryStatus(orderId: string, deliveryStatus: stri
     return { success: false, error: error.message || "Failed to update delivery status" };
   }
 }
+
+export async function getOrderById(id: string) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { customer: true, payments: true }
+    });
+    return order;
+  } catch (error) {
+    console.error("Failed to fetch order:", error);
+    return null;
+  }
+}
