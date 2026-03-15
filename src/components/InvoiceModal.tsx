@@ -128,36 +128,63 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
     if (!receiptRef.current) return;
 
     try {
+      // Use dynamic import for html2canvas
       const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(receiptRef.current, {
-        scale: 3, // Very high definition
+      
+      // Clone the receipt to a hidden container to avoid Dialog/Overlay interference
+      const clone = receiptRef.current.cloneNode(true) as HTMLElement;
+      clone.style.position = "fixed";
+      clone.style.top = "-9999px";
+      clone.style.left = "-9999px";
+      clone.style.width = "400px"; // Force a consistent width for the receipt image
+      document.body.appendChild(clone);
+
+      const canvas = await html2canvas(clone, {
+        scale: 2, // 2x is enough for HD and more compatible
         backgroundColor: "#ffffff",
         useCORS: true,
         logging: false,
+        onclone: (clonedDoc) => {
+          // Ensure pesos signs are rendered as plain text or standard symbols if they look weird
+          const pesos = clonedDoc.querySelectorAll('.pesos-sign');
+          pesos.forEach(p => (p as HTMLElement).innerText = 'P'); 
+        }
       });
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        const file = new File([blob], `receipt-${order.id.slice(-8)}.png`, { type: "image/png" });
+      document.body.removeChild(clone);
 
-        // Check if sharing is supported on this device
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert("Empty image generated. Please try again.");
+          return;
+        }
+        
+        const fileName = `receipt-${order.id.slice(-8)}.png`;
+        const file = new File([blob], fileName, { type: "image/png" });
+
+        // Robust check for share capability
+        const shareData = {
+          files: [file],
+          title: `Receipt #${order.id.slice(-8).toUpperCase()}`,
+        };
+
+        const canShare = !!(navigator.canShare && navigator.canShare(shareData));
+
+        if (canShare && navigator.share) {
           try {
-            await navigator.share({
-              files: [file],
-              title: `Receipt #${order.id.slice(-8).toUpperCase()}`,
-            });
-          } catch (shareErr) {
-            console.error("Shared failed", shareErr);
-            triggerDownload(blob);
+            await navigator.share(shareData);
+          } catch (shareErr: any) {
+            if (shareErr.name !== 'AbortError') {
+              triggerDownload(blob);
+            }
           }
         } else {
           triggerDownload(blob);
         }
       }, "image/png");
-    } catch (err) {
-      console.error("Image capture failed:", err);
-      alert("Could not generate image receipt. Try printing instead.");
+    } catch (err: any) {
+      console.error("Image capture error:", err);
+      alert("Error: " + (err.message || "Failed to generate image."));
     }
   };
 
@@ -219,13 +246,13 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
                 <div key={i} className="grid grid-cols-[35px_1fr_90px] gap-2 items-start">
                   <span className="font-bold">{item.quantity}</span>
                   <span className="font-bold uppercase leading-[1.3] break-words">{item.name}</span>
-                  <span className="text-right font-black">₱{(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="text-right font-black"><span className="pesos-sign">₱</span>{(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
             <div className="border-t-2 border-black border-dashed mt-4 pt-4 flex justify-end items-center gap-3">
               <span className="text-xl font-black">TOTAL |</span>
-              <span className="text-2xl font-black">₱{order.total.toFixed(2)}</span>
+              <span className="text-2xl font-black"><span className="pesos-sign">₱</span>{order.total.toFixed(2)}</span>
             </div>
           </div>
 
