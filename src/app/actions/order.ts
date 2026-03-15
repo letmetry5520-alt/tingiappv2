@@ -181,6 +181,38 @@ export async function getOrderById(id: string) {
       where: { id },
       include: { customer: true, payments: true }
     });
+    
+    if (!order) return null;
+
+    // --- ENRICHMENT FOR HISTORICAL ORDERS ---
+    // If unitPrice is 0 or missing in packageItem breakdown, try to find current product price
+    const enrichedItems = [...(order.items as any[])];
+    let changed = false;
+
+    for (let i = 0; i < enrichedItems.length; i++) {
+      const item = enrichedItems[i];
+      if (item.type === "package" && item.packageItems) {
+        for (let j = 0; j < item.packageItems.length; j++) {
+          const sub = item.packageItems[j];
+          if (!sub.unitPrice || sub.unitPrice === 0) {
+            // Need the ID to look it up. If ID is missing, we use the name to search
+            const product = await prisma.product.findFirst({
+              where: { name: sub.name },
+              select: { price: true }
+            });
+            if (product) {
+              sub.unitPrice = product.price;
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+
+    if (changed) {
+      return { ...order, items: enrichedItems };
+    }
+
     return order;
   } catch (error) {
     console.error("Failed to fetch order:", error);
