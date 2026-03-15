@@ -1,10 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, isToday } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Plus, Clock } from "lucide-react";
+import { Plus, Clock, AlarmClock } from "lucide-react";
 import { PaymentDialog } from "../receivables/PaymentDialog";
 import { DeliveryStatusSelect } from "./DeliveryStatusSelect";
 import { OrderDetailsDialog } from "./OrderDetailsDialog";
@@ -12,26 +12,84 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Info, MapPin, User as UserIcon, Phone, Navigation } from "lucide-react";
 import { OrderInvoiceWrapper } from "./OrderInvoiceWrapper";
 import { Card } from "@/components/ui/card";
+import { OrdersFilter } from "./OrdersFilter";
 
 export const dynamic = "force-dynamic";
 
 const prisma = new PrismaClient();
 
-export default async function OrdersPage() {
-  const orders = await prisma.order.findMany({
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: { status?: string; type?: string };
+}) {
+  const allOrders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
     include: { customer: true, payments: true },
-    take: 50,
+    take: 200,
   });
 
+  const now = new Date();
+
+  // Compute counts for badges on the filter bar
+  const totalDueToday = allOrders.filter(
+    (o) => o.dueDate && isToday(new Date(o.dueDate)) && o.status !== "Paid"
+  ).length;
+  const totalOverdue = allOrders.filter(
+    (o) => o.dueDate && differenceInDays(new Date(o.dueDate), now) < 0 && o.status !== "Paid"
+  ).length;
+
+  // --- FILTER ---
+  const statusFilter = searchParams.status || "all";
+  const typeFilter = searchParams.type || "all";
+
+  let filtered = allOrders.filter((order) => {
+    const isPaid = order.status === "Paid";
+    const daysUntilDue = order.dueDate ? differenceInDays(new Date(order.dueDate), now) : null;
+
+    if (typeFilter === "cash" && order.paymentType !== "Cash") return false;
+    if (typeFilter === "utang" && order.paymentType !== "Utang") return false;
+
+    if (statusFilter === "pending" && isPaid) return false;
+    if (statusFilter === "paid" && !isPaid) return false;
+    if (statusFilter === "due_today") {
+      if (!order.dueDate || !isToday(new Date(order.dueDate)) || isPaid) return false;
+    }
+    if (statusFilter === "overdue") {
+      if (daysUntilDue === null || daysUntilDue >= 0 || isPaid) return false;
+    }
+    return true;
+  });
+
+  // --- SORT: Due today first, then overdue, then rest by date desc ---
+  const getDuePriority = (order: typeof allOrders[0]) => {
+    if (!order.dueDate || order.status === "Paid") return 3;
+    const days = differenceInDays(new Date(order.dueDate), now);
+    if (isToday(new Date(order.dueDate))) return 0;   // Due today → top
+    if (days < 0) return 1;                            // Overdue → second
+    return 2;                                          // Future due date
+  };
+
+  filtered.sort((a, b) => {
+    const pa = getDuePriority(a);
+    const pb = getDuePriority(b);
+    if (pa !== pb) return pa - pb;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const orders = filtered.slice(0, 50);
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header */}
       <div className="flex justify-between items-center bg-white/50 p-4 sm:p-6 rounded-2xl shadow-sm border border-white/40 backdrop-blur-xl">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Orders History
           </h1>
-          <p className="text-muted-foreground font-medium mt-1 text-sm">Review your latest 50 transactions.</p>
+          <p className="text-muted-foreground font-medium mt-1 text-sm">
+            Showing {orders.length} of {allOrders.length} orders
+          </p>
         </div>
         <Button asChild size="sm" className="rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300">
           <Link href="/orders/new">
@@ -40,15 +98,37 @@ export default async function OrdersPage() {
         </Button>
       </div>
 
+      {/* Filter Bar */}
+      <OrdersFilter totalDueToday={totalDueToday} totalOverdue={totalOverdue} />
+
       {/* ── MOBILE CARD LIST (hidden on md+) ── */}
       <div className="flex flex-col gap-3 md:hidden">
         {orders.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground text-sm">No orders found. Create a new one.</div>
+          <div className="text-center py-10 text-muted-foreground text-sm">No orders match the selected filters.</div>
         ) : (
           orders.map((order) => {
             const isPaid = order.status === "Paid";
+            const daysUntilDue = order.dueDate ? differenceInDays(new Date(order.dueDate), now) : null;
+            const isDueToday = order.dueDate ? isToday(new Date(order.dueDate)) : false;
+            const isOverdue = daysUntilDue !== null && daysUntilDue < 0 && !isPaid;
+
             return (
-              <Card key={order.id} className="p-4 rounded-2xl border-0 shadow-md bg-white/80 backdrop-blur space-y-3">
+              <Card
+                key={order.id}
+                className={`p-4 rounded-2xl border-0 shadow-md bg-white/80 backdrop-blur space-y-3 ${
+                  isDueToday && !isPaid ? "ring-2 ring-amber-400" : isOverdue ? "ring-2 ring-rose-400" : ""
+                }`}
+              >
+                {/* Due Today / Overdue Banner */}
+                {(isDueToday || isOverdue) && !isPaid && (
+                  <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg w-fit ${
+                    isDueToday ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"
+                  }`}>
+                    {isDueToday ? <AlarmClock className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                    {isDueToday ? "DUE TODAY" : "OVERDUE"}
+                  </div>
+                )}
+
                 {/* Row 1: Customer + Total */}
                 <div className="flex justify-between items-start">
                   <div>
@@ -76,14 +156,10 @@ export default async function OrdersPage() {
                   <DeliveryStatusSelect orderId={order.id} initialStatus={order.deliveryStatus || "Pending"} />
                   {order.paymentType === "Utang" && order.deliveryStatus === "Delivered" && !isPaid && order.dueDate && (
                     <Badge variant="outline" className={`rounded-xl px-2 py-0.5 text-[9px] font-black border-0 shadow-sm flex items-center gap-1.5 ${
-                      differenceInDays(new Date(order.dueDate), new Date()) < 0
-                        ? "bg-rose-500 text-white animate-pulse"
-                        : "bg-amber-100 text-amber-700"
+                      isOverdue ? "bg-rose-500 text-white animate-pulse" : "bg-amber-100 text-amber-700"
                     }`}>
                       <Clock className="w-2.5 h-2.5" />
-                      {differenceInDays(new Date(order.dueDate), new Date()) < 0
-                        ? "OVERDUE"
-                        : `DUE IN ${differenceInDays(new Date(order.dueDate), new Date())} DAYS`}
+                      {isOverdue ? "OVERDUE" : isDueToday ? "DUE TODAY" : `DUE IN ${daysUntilDue} DAYS`}
                     </Badge>
                   )}
                 </div>
@@ -131,19 +207,33 @@ export default async function OrdersPage() {
               {orders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                    No orders found. Create a new one.
+                    No orders match the selected filters.
                   </TableCell>
                 </TableRow>
               ) : (
                 orders.map((order) => {
                   const isPaid = order.status === "Paid";
+                  const daysUntilDue = order.dueDate ? differenceInDays(new Date(order.dueDate), now) : null;
+                  const isDueToday = order.dueDate ? isToday(new Date(order.dueDate)) : false;
+                  const isOverdue = daysUntilDue !== null && daysUntilDue < 0 && !isPaid;
                   const mapsUrl = order.customer.latitude != null && order.customer.longitude != null
                     ? `https://www.google.com/maps/dir/?api=1&destination=${order.customer.latitude},${order.customer.longitude}`
                     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.customer.address)}`;
 
                   return (
-                    <TableRow key={order.id} className="hover:bg-black/[0.02] transition-colors">
+                    <TableRow
+                      key={order.id}
+                      className={`hover:bg-black/[0.02] transition-colors ${
+                        isDueToday && !isPaid ? "bg-amber-50/60" : isOverdue ? "bg-rose-50/60" : ""
+                      }`}
+                    >
                       <TableCell className="font-medium whitespace-nowrap">
+                        {(isDueToday || isOverdue) && !isPaid && (
+                          <div className={`text-[9px] font-black uppercase tracking-widest mb-1 flex items-center gap-1 ${isDueToday ? "text-amber-600" : "text-rose-600"}`}>
+                            {isDueToday ? <AlarmClock className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
+                            {isDueToday ? "DUE TODAY" : "OVERDUE"}
+                          </div>
+                        )}
                         {format(new Date(order.createdAt), "MMM dd, yyyy")}
                         <div className="text-xs text-muted-foreground">{format(new Date(order.createdAt), "hh:mm a")}</div>
                       </TableCell>
@@ -215,14 +305,10 @@ export default async function OrdersPage() {
                           <DeliveryStatusSelect orderId={order.id} initialStatus={order.deliveryStatus || "Pending"} />
                           {order.paymentType === "Utang" && order.deliveryStatus === "Delivered" && !isPaid && order.dueDate && (
                             <Badge variant="outline" className={`rounded-xl px-2 py-0.5 text-[9px] font-black border-0 shadow-sm flex items-center gap-1.5 w-fit ${
-                              differenceInDays(new Date(order.dueDate), new Date()) < 0
-                                ? "bg-rose-500 text-white animate-pulse"
-                                : "bg-amber-100 text-amber-700"
+                              isOverdue ? "bg-rose-500 text-white animate-pulse" : "bg-amber-100 text-amber-700"
                             }`}>
                               <Clock className="w-2.5 h-2.5" />
-                              {differenceInDays(new Date(order.dueDate), new Date()) < 0
-                                ? "OVERDUE"
-                                : `DUE IN ${differenceInDays(new Date(order.dueDate), new Date())} DAYS`}
+                              {isOverdue ? "OVERDUE" : isDueToday ? "DUE TODAY" : `DUE IN ${daysUntilDue} DAYS`}
                             </Badge>
                           )}
                         </div>
