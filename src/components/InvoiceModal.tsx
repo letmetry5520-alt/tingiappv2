@@ -125,53 +125,120 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
   };
 
   const handleShare = async () => {
-    if (!receiptRef.current) return;
-
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      
-      const clone = receiptRef.current.cloneNode(true) as HTMLElement;
-      clone.style.position = "fixed";
-      clone.style.top = "-9999px";
-      clone.style.left = "-9999px";
-      clone.style.width = "400px";
-      clone.style.background = "#ffffff";
-      clone.style.color = "#000000";
+      // Build the canvas entirely from data — no DOM, no oklch, no css variables.
+      const items: any[] = order.items;
+      const lineH = 22;
+      const padX = 20;
+      const width = 400;
+      const headerH = 90;
+      const infoH = 80;
+      const itemsH = items.length * lineH + 10;
+      const totalH = 50;
+      const footerH = 50;
+      const totalHeight = headerH + infoH + itemsH + totalH + footerH + 40;
 
-      // CRITICAL: Force standard colors and remove oklch/lab variables in the clone
-      const sanitize = (el: HTMLElement) => {
-        el.style.color = "black";
-        el.style.backgroundColor = "transparent";
-        el.style.borderColor = "black";
-        // Remove classes that might use oklch/lab variables via Tailwind v4
-        el.className = el.className.replace(/(text|bg|border|ring)-\S+/g, "");
-        Array.from(el.children).forEach(child => sanitize(child as HTMLElement));
-      };
-      sanitize(clone);
-      // Ensure the root of receipt is white
-      clone.style.backgroundColor = "#ffffff";
-      
-      document.body.appendChild(clone);
+      const canvas = document.createElement("canvas");
+      canvas.width = width * 2;     // 2x resolution
+      canvas.height = totalHeight * 2;
+      const ctx = canvas.getContext("2d")!;
+      ctx.scale(2, 2);              // Draw at 2x
 
-      const canvas = await html2canvas(clone, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-        onclone: (clonedDoc) => {
-          const pesos = clonedDoc.querySelectorAll('.pesos-sign');
-          pesos.forEach(p => (p as HTMLElement).innerText = 'P'); 
+      // Background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, totalHeight);
+
+      // Border
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(4, 4, width - 8, totalHeight - 8);
+
+      let y = 20;
+
+      // --- Header ---
+      ctx.fillStyle = "#000000";
+      ctx.textAlign = "center";
+      ctx.font = "bold 18px 'Courier New', monospace";
+      ctx.fillText("MRTINGI ONLINE SUPPLIER", width / 2, y); y += 20;
+      ctx.font = "12px 'Courier New', monospace";
+      ctx.fillText("Tel (0965-445-9305)", width / 2, y); y += 16;
+      ctx.fillText("Marilao Bulacan", width / 2, y); y += 20;
+
+      // Dashed line
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(width - padX, y); ctx.stroke(); y += 14;
+      ctx.setLineDash([]);
+
+      // --- Info ---
+      ctx.textAlign = "left";
+      ctx.font = "12px 'Courier New', monospace";
+      ctx.fillText(`Receipt #: ${order.id.slice(-8).toUpperCase()}`, padX, y); y += 16;
+      ctx.fillText(`Date:  ${format(new Date(order.createdAt), "yyyy-MM-dd HH:mm")}`, padX, y); y += 20;
+      ctx.font = "11px 'Courier New', monospace";
+      ctx.fillStyle = "#555555";
+      ctx.fillText("CUSTOMER:", padX, y); y += 14;
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 14px 'Courier New', monospace";
+      ctx.fillText(order.customer?.storeName || "Guest", padX, y); y += 18;
+
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(width - padX, y); ctx.stroke(); y += 12;
+      ctx.setLineDash([]);
+
+      // --- Items header ---
+      ctx.font = "bold 11px 'Courier New', monospace";
+      ctx.fillStyle = "#000000";
+      ctx.textAlign = "left";
+      ctx.fillText("Qty", padX, y);
+      ctx.fillText("Description", padX + 40, y);
+      ctx.textAlign = "right";
+      ctx.fillText("Amount", width - padX, y); y += 6;
+
+      // Solid line under header
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(width - padX, y); ctx.stroke(); y += 12;
+
+      // --- Items ---
+      ctx.font = "12px 'Courier New', monospace";
+      for (const item of items) {
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#000000";
+        ctx.fillText(String(item.quantity), padX, y);
+        // Truncate long names
+        const maxNameW = width - padX - 40 - 90;
+        let name = item.name as string;
+        ctx.font = "bold 12px 'Courier New', monospace";
+        while (ctx.measureText(name).width > maxNameW && name.length > 1) {
+          name = name.slice(0, -1);
         }
-      });
+        ctx.fillText(name === item.name ? name : name + "…", padX + 40, y);
+        ctx.font = "bold 12px 'Courier New', monospace";
+        ctx.textAlign = "right";
+        ctx.fillText(`P${(item.price * item.quantity).toFixed(2)}`, width - padX, y);
+        y += lineH;
+      }
 
-      document.body.removeChild(clone);
+      // Dashed line before total
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(width - padX, y); ctx.stroke(); y += 14;
+      ctx.setLineDash([]);
 
+      // --- Total ---
+      ctx.textAlign = "right";
+      ctx.font = "bold 16px 'Courier New', monospace";
+      ctx.fillText(`TOTAL | P${order.total.toFixed(2)}`, width - padX, y); y += 28;
+
+      // --- Footer ---
+      ctx.textAlign = "left";
+      ctx.font = "11px 'Courier New', monospace";
+      ctx.fillStyle = "#000000";
+      ctx.fillText(`Status: Delivered`, padX, y); y += 14;
+      ctx.fillText(`By: Tingiapp`, padX, y);
+
+      // Convert to blob and share/download
       canvas.toBlob(async (blob) => {
-        if (!blob) {
-          alert("Could not generate image. Please try again.");
-          return;
-        }
-        
+        if (!blob) { alert("Could not generate image. Please try again."); return; }
+
         const fileName = `receipt-${order.id.slice(-8)}.png`;
         const file = new File([blob], fileName, { type: "image/png" });
         const shareData = { files: [file], title: `Receipt #${order.id.slice(-8).toUpperCase()}` };
@@ -180,15 +247,15 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
           try {
             await navigator.share(shareData);
           } catch (shareErr: any) {
-            if (shareErr.name !== 'AbortError') triggerDownload(blob);
+            if (shareErr.name !== "AbortError") triggerDownload(blob);
           }
         } else {
           triggerDownload(blob);
         }
       }, "image/png");
     } catch (err: any) {
-      console.error("Image capture error:", err);
-      alert("Error: " + (err.message || "Failed to generate image."));
+      console.error("Image generation error:", err);
+      alert("Error: " + (err.message || "Failed to generate receipt image."));
     }
   };
 
