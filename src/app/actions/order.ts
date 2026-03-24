@@ -219,3 +219,51 @@ export async function getOrderById(id: string) {
     return null;
   }
 }
+export async function adjustOrder(orderId: string, amount: number, reason: string) {
+  console.log("🛠️ Adjusting order:", { orderId, amount, reason });
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId }
+    }) as any;
+
+    if (!order) {
+      console.log("❌ Order not found:", orderId);
+      throw new Error("Order not found");
+    }
+    console.log("✅ Order found:", order.id);
+
+    const currentAdjustments = Array.isArray(order.adjustments) ? order.adjustments : [];
+    const newAdjustment = {
+      amount,
+      reason,
+      createdAt: new Date()
+    };
+
+    const updatedAdjustments = [...currentAdjustments, newAdjustment];
+    
+    // Total is reduced by the adjustment amount
+    const newTotal = order.total - amount;
+    // Profit is also reduced by the same amount (cost remains same)
+    const newProfit = order.profit - amount;
+
+    console.log("🔄 Updating order total and profit...", { newTotal, newProfit });
+    await (prisma.order as any).update({
+      where: { id: orderId },
+      data: {
+        adjustments: updatedAdjustments,
+        total: newTotal,
+        profit: newProfit
+      }
+    });
+    console.log("✨ Order adjustment stored successfully");
+
+    revalidatePath("/orders");
+    revalidatePath("/receivables");
+    revalidatePath(`/customers/${order.customerId}`);
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to adjust order:", error);
+    return { success: false, error: error.message || "Failed to adjust order" };
+  }
+}

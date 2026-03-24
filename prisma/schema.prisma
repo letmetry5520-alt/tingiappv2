@@ -79,6 +79,7 @@ model Order {
   dueDate     DateTime?
   status      String   @default("Pending") // Pending, Partially Paid, Paid
   deliveryStatus String @default("Pending") // Pending, Processing, Out for Delivery, Delivered, Cancelled
+  adjustments Json?     // Array of { amount: number, reason: string, createdAt: DateTime }
   
   payments    Payment[]
   

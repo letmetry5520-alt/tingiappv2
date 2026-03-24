@@ -175,7 +175,12 @@ export function ReceivablesTable({ initialOrders }: { initialOrders: any[] }) {
                       </div>
                     </TableCell>
                     <TableCell className="px-8 text-right">
-                      <PaymentDialog order={{ id: order.id, total: order.total, payments: order.payments }} />
+                      <PaymentDialog order={{ 
+                        id: order.id, 
+                        total: order.total, 
+                        payments: order.payments,
+                        adjustments: order.adjustments
+                      }} />
                     </TableCell>
                   </TableRow>
                 );

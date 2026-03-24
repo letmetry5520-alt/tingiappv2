@@ -19,6 +19,7 @@ type OrderToPay = {
   id: string;
   total: number;
   payments: Array<{ amount: number }>;
+  adjustments?: any[];
 }
 
 export function PaymentDialog({ 
@@ -70,12 +71,28 @@ export function PaymentDialog({
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Subtotal</Label>
+              <div className="col-span-3 font-semibold">₱{(order.total + ((order as any).adjustments || []).reduce((acc: number, adj: any) => acc + (adj.amount || 0), 0)).toFixed(2)}</div>
+            </div>
+            {((order as any).adjustments || []).map((adj: any, idx: number) => (
+              <div key={idx} className="grid grid-cols-4 items-center gap-4 text-xs italic text-rose-500">
+                <div className="text-right flex items-center justify-end gap-1">
+                  <div className="w-1 h-1 rounded-full bg-rose-400" />
+                  Deduction
+                </div>
+                <div className="col-span-3 flex justify-between">
+                  <span>{adj.reason}</span>
+                  <span className="font-bold">-₱{adj.amount.toFixed(2)}</span>
+                </div>
+              </div>
+            ))}
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Total Owed</Label>
-              <div className="col-span-3 font-semibold">₱{order.total.toFixed(2)}</div>
+              <div className="col-span-3 text-rose-600 font-bold">₱{order.total.toFixed(2)}</div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Remaining</Label>
-              <div className="col-span-3 text-red-600 font-bold">₱{remaining.toFixed(2)}</div>
+              <div className="col-span-3 text-red-600 font-black">₱{remaining.toFixed(2)}</div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="amount" className="text-right">
@@ -86,7 +103,7 @@ export function PaymentDialog({
                 type="number"
                 step="0.01"
                 min="0.01"
-                max={remaining.toFixed(2)}
+                max={(remaining + 0.01).toFixed(2)}
                 className="col-span-3"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
@@ -95,10 +112,10 @@ export function PaymentDialog({
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => setAmount(remaining.toString())}>
+            <Button type="button" variant="outline" size="sm" onClick={() => setAmount(remaining.toFixed(2))}>
               Pay Full
             </Button>
-            <Button type="submit" disabled={loading || !amount}>
+            <Button type="submit" disabled={loading || !amount} size="sm">
               {loading ? "Processing..." : "Confirm Payment"}
             </Button>
           </DialogFooter>

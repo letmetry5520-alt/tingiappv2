@@ -25,16 +25,12 @@ export function OrdersFilter({ totalDueToday, totalOverdue }: { totalDueToday: n
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const status = searchParams.get("status") || "all";
+  const status = searchParams.get("status") || "pending";
   const type = searchParams.get("type") || "all";
 
   const setFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === "all") {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
+    params.set(key, value);
     router.replace(`${pathname}?${params.toString()}`);
   };
 
@@ -43,9 +39,9 @@ export function OrdersFilter({ totalDueToday, totalOverdue }: { totalDueToday: n
       <div className="flex items-center gap-2">
         <Filter className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Filters</span>
-        {(status !== "all" || type !== "all") && (
+        {(status !== "pending" || type !== "all") && (
           <button
-            onClick={() => { setFilter("status", "all"); setFilter("type", "all"); }}
+            onClick={() => router.replace(pathname)}
             className="ml-auto text-[10px] font-bold text-rose-500 hover:underline"
           >
             Clear All

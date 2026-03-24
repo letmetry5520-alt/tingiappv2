@@ -30,6 +30,7 @@ type OrderDetailsProps = {
     deliveryStatus: string;
     paymentType: string;
     items: any; // Will cast to OrderItem[]
+    adjustments?: any[];
   };
 };
 
@@ -125,11 +126,30 @@ export function OrderDetailsDialog({ order }: OrderDetailsProps) {
             </div>
           </div>
 
+          {/* Adjustments Section */}
+          {(order as any).adjustments && (order as any).adjustments.length > 0 && (
+            <div className="pt-4 border-t border-black/[0.03] space-y-2">
+              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                <span>Subtotal</span>
+                <span>₱{(order.total + (order as any).adjustments.reduce((acc: number, adj: any) => acc + (adj.amount || 0), 0)).toFixed(2)}</span>
+              </div>
+              {(order as any).adjustments.map((adj: any, idx: number) => (
+                <div key={idx} className="flex justify-between items-center text-xs font-bold text-rose-500 bg-rose-50/50 p-2 rounded-xl border border-rose-100/50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                    <span>{adj.reason}</span>
+                  </div>
+                  <span>- ₱{(adj.amount || 0).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Grand Total */}
           <div className="pt-6 border-t border-black/[0.03] flex justify-between items-end">
             <div>
                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1 flex items-center gap-2">
-                    <Receipt className="h-3 w-3" /> Total Bill
+                    <Receipt className="h-3 w-3" /> Resulting Total
                 </div>
                 <Badge variant="outline" className="rounded-lg text-[10px] uppercase font-bold text-primary border-primary/20 bg-primary/5">
                     {order.paymentType} Transaction

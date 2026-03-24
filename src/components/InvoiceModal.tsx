@@ -28,8 +28,8 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
   if (!order) return null;
 
   const handlePrint = () => {
-    const printContent = receiptRef.current;
-    if (!printContent) return;
+    const adjustments = Array.isArray(order.adjustments) ? order.adjustments : [];
+    const subtotal = order.total + adjustments.reduce((acc: number, adj: any) => acc + (adj.amount || 0), 0);
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
@@ -63,7 +63,8 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
             .col-unit { width: 22%; text-align: right; }
             .col-amt { width: 26%; text-align: right; }
             
-            .total-section { text-align: right; font-weight: bold; font-size: 12px; margin-top: 8px; }
+            .total-section { text-align: right; font-weight: bold; font-size: 12px; margin-top: 4px; }
+            .adj-section { text-align: right; font-size: 10px; font-style: italic; }
             .footer { margin-top: 15px; font-size: 10px; text-align: center; border-top: 1px dashed #000; padding-top: 8px; }
           </style>
         </head>
@@ -88,7 +89,7 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
               <tr>
                 <th class="col-qty">Qty</th>
                 <th class="col-desc">Description</th>
-                <th class="col-unit" style="text-align:right">Unit Price</th>
+                <th class="col-unit" style="text-align:right">Price</th>
                 <th class="col-amt" style="text-align:right">Total</th>
               </tr>
             </thead>
@@ -119,8 +120,18 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
           </table>
           <div class="divider"></div>
           
+          <div class="total-section" style="font-weight: normal; font-size: 10px;">
+            Subtotal: ₱${subtotal.toFixed(2)}
+          </div>
+
+          ${adjustments.map((adj: any) => `
+            <div class="adj-section">
+              - ₱${(adj.amount || 0).toFixed(2)} (${adj.reason})
+            </div>
+          `).join('')}
+
           <div class="total-section">
-            Total | ₱${order.total.toFixed(2)}
+            ORDER TOTAL | ₱${order.total.toFixed(2)}
           </div>
 
           <div class="mt-1" style="font-size: 10px;">
@@ -163,9 +174,11 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
       const headerH = 90;
       const infoH = 80;
       const itemsH = contentHeight + 20;
-      const totalH = 50;
+      const adjustments = Array.isArray(order.adjustments) ? order.adjustments : [];
+      const adjH = adjustments.length * 16;
+      const totalH = 70; // Increased to fit subtotal + adjustments
       const footerH = 50;
-      const totalHeight = headerH + infoH + itemsH + totalH + footerH + 40;
+      const totalHeight = headerH + infoH + itemsH + adjH + totalH + footerH + 40;
 
       const canvas = document.createElement("canvas");
       canvas.width = width * 2;
@@ -292,13 +305,28 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
         y += 6; // gap
       }
 
-      // Dashed line before total
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(width - padX, y); ctx.stroke(); y += 14;
+      // --- Adjustments ---
+      const subtotal = order.total + adjustments.reduce((acc: number, adj: any) => acc + (adj.amount || 0), 0);
+      
+      ctx.textAlign = "right";
+      ctx.font = "12px 'Courier New', monospace";
+      ctx.fillStyle = "#666666";
+      ctx.fillText(`Subtotal: P${subtotal.toFixed(2)}`, width - padX, y); y += 16;
+      
+      for (const adj of adjustments) {
+        ctx.font = "italic 11px 'Courier New', monospace";
+        ctx.fillStyle = "#rose-600"; // approximating rose color
+        ctx.fillText(`- P${(adj.amount || 0).toFixed(2)} (${adj.reason})`, width - padX, y); y += 16;
+      }
+      
+      y += 6;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath(); ctx.moveTo(width - 150, y); ctx.lineTo(width - padX, y); ctx.stroke(); y += 16;
       ctx.setLineDash([]);
 
       // --- Total ---
       ctx.textAlign = "right";
+      ctx.fillStyle = "#000000";
       ctx.font = "bold 16px 'Courier New', monospace";
       ctx.fillText(`TOTAL | P${order.total.toFixed(2)}`, width - padX, y); y += 28;
 
@@ -417,9 +445,22 @@ export function InvoiceModal({ order, isOpen, onOpenChange, showTrigger = false 
                 </div>
               ))}
             </div>
-            <div className="border-t-2 border-black border-dashed mt-4 pt-4 flex justify-end items-center gap-3">
-              <span className="text-xl font-black">TOTAL |</span>
-              <span className="text-2xl font-black"><span className="pesos-sign">₱</span>{order.total.toFixed(2)}</span>
+            {/* Adjustments in Thermal UI */}
+            <div className="border-t-2 border-black border-dashed mt-4 pt-4 space-y-1">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                <span>Subtotal:</span>
+                <span>₱{(order.total + (Array.isArray(order.adjustments) ? order.adjustments : []).reduce((acc: number, adj: any) => acc + (adj.amount || 0), 0)).toFixed(2)}</span>
+              </div>
+              {(Array.isArray(order.adjustments) ? order.adjustments : []).map((adj: any, ai: number) => (
+                <div key={ai} className="flex justify-between items-center text-xs italic text-rose-600">
+                  <span>- {adj.reason}:</span>
+                  <span>₱{(adj.amount || 0).toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="flex justify-end items-center gap-3 pt-2">
+                <span className="text-xl font-black">TOTAL |</span>
+                <span className="text-2xl font-black"><span className="pesos-sign">₱</span>{order.total.toFixed(2)}</span>
+              </div>
             </div>
           </div>
 

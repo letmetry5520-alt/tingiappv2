@@ -72,3 +72,27 @@ export async function updateCustomer(id: string, formData: FormData) {
     return { success: false, error: error.message || "Failed to update customer" };
   }
 }
+export async function toggleDelinquentStatus(id: string) {
+  try {
+    const customer = await prisma.customer.findUnique({
+      where: { id },
+      select: { isDelinquent: true }
+    });
+
+    if (!customer) throw new Error("Customer not found");
+
+    await prisma.customer.update({
+      where: { id },
+      data: { isDelinquent: !customer.isDelinquent }
+    });
+
+    revalidatePath("/customers");
+    revalidatePath(`/customers/${id}`);
+    revalidatePath("/orders");
+    revalidatePath("/receivables");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to toggle delinquent status:", error);
+    return { success: false, error: error.message || "Failed to toggle status" };
+  }
+}

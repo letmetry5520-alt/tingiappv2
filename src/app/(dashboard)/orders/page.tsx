@@ -13,6 +13,8 @@ import { Info, MapPin, User as UserIcon, Phone, Navigation } from "lucide-react"
 import { OrderInvoiceWrapper } from "./OrderInvoiceWrapper";
 import { Card } from "@/components/ui/card";
 import { OrdersFilter } from "./OrdersFilter";
+import { DelinquentToggle } from "./DelinquentToggle";
+import { AdjustmentModal } from "./AdjustmentModal";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +23,9 @@ const prisma = new PrismaClient();
 export default async function OrdersPage({
   searchParams,
 }: {
-  searchParams: { status?: string; type?: string };
+  searchParams: Promise<{ status?: string; type?: string }>;
 }) {
+  const { status: rawStatus, type: rawType } = await searchParams;
   const allOrders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
     include: { customer: true, payments: true },
@@ -40,8 +43,8 @@ export default async function OrdersPage({
   ).length;
 
   // --- FILTER ---
-  const statusFilter = searchParams.status || "all";
-  const typeFilter = searchParams.type || "all";
+  const statusFilter = rawStatus || "pending";
+  const typeFilter = rawType || "all";
 
   let filtered = allOrders.filter((order) => {
     const isPaid = order.status === "Paid";
@@ -61,19 +64,32 @@ export default async function OrdersPage({
     return true;
   });
 
-  // --- SORT: Due today first, then overdue, then rest by date desc ---
+  // --- SORT: Overdue first, then Due today, then Due soon, then rest by date desc ---
   const getDuePriority = (order: typeof allOrders[0]) => {
-    if (!order.dueDate || order.status === "Paid") return 3;
-    const days = differenceInDays(new Date(order.dueDate), now);
-    if (isToday(new Date(order.dueDate))) return 0;   // Due today → top
-    if (days < 0) return 1;                            // Overdue → second
-    return 2;                                          // Future due date
+    if (order.status === "Paid") return 5;             // Paid/Completed → lower
+    if (order.customer.isDelinquent) return 10;        // Delinquent → absolute bottom
+    if (!order.dueDate) return 4;                      // No due date → buffer
+    
+    const dueDate = new Date(order.dueDate);
+    const diff = differenceInDays(dueDate, now);
+
+    if (diff < 0) return 0;                            // Overdue → Top priority
+    if (isToday(dueDate)) return 1;                    // Due Today → Second
+    if (diff <= 2) return 2;                           // Due Soon (2 days) → Third
+    return 3;                                          // Safe / Future
   };
 
   filtered.sort((a, b) => {
     const pa = getDuePriority(a);
     const pb = getDuePriority(b);
     if (pa !== pb) return pa - pb;
+
+    // Sub-sorting: For urgent orders (0, 1, 2), sort by dueDate ASC (earliest first)
+    if (pa <= 2 && a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+
+    // Default sub-sorting: Newest creation date first
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
@@ -117,7 +133,7 @@ export default async function OrdersPage({
                 key={order.id}
                 className={`p-4 rounded-2xl border-0 shadow-md bg-white/80 backdrop-blur space-y-3 ${
                   isDueToday && !isPaid ? "ring-2 ring-amber-400" : isOverdue ? "ring-2 ring-rose-400" : ""
-                }`}
+                } ${order.customer.isDelinquent ? "border-l-4 border-rose-500" : ""}`}
               >
                 {/* Due Today / Overdue Banner */}
                 {(isDueToday || isOverdue) && !isPaid && (
@@ -168,6 +184,15 @@ export default async function OrdersPage({
                 <div className="flex gap-2 pt-1 border-t border-black/5 flex-wrap">
                   <OrderDetailsDialog order={order} />
                   <OrderInvoiceWrapper order={order} />
+                  <DelinquentToggle 
+                    customerId={order.customer.id} 
+                    isDelinquent={order.customer.isDelinquent} 
+                    storeName={order.customer.storeName} 
+                  />
+                  <AdjustmentModal 
+                    orderId={order.id} 
+                    storeName={order.customer.storeName} 
+                  />
                   {!isPaid && (
                     <>
                       {order.paymentType === "Cash" && order.status === "Pending" ? (
@@ -318,6 +343,15 @@ export default async function OrdersPage({
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <AdjustmentModal 
+                            orderId={order.id} 
+                            storeName={order.customer.storeName} 
+                          />
+                          <DelinquentToggle 
+                            customerId={order.customer.id} 
+                            isDelinquent={order.customer.isDelinquent} 
+                            storeName={order.customer.storeName} 
+                          />
                           <OrderDetailsDialog order={order} />
                           {!isPaid && (
                             <>
