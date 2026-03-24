@@ -30,7 +30,7 @@ type OrderDetailsProps = {
     deliveryStatus: string;
     paymentType: string;
     items: any; // Will cast to OrderItem[]
-    adjustments?: any[];
+    adjustments?: any;
   };
 };
 

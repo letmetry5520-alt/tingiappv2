@@ -19,7 +19,7 @@ type OrderToPay = {
   id: string;
   total: number;
   payments: Array<{ amount: number }>;
-  adjustments?: any[];
+  adjustments?: any;
 }
 
 export function PaymentDialog({ 
